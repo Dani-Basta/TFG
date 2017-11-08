@@ -1,9 +1,11 @@
-#' Predict next value of the time series using k-nearest neighbors algorithm
+#' Predict values of the time series using k-nearest neighbors algorithm
 #'
 #' @param x A time series
 #' @param k Number of neighbors
 #' @param d Length of the "neighbourhoods"
+#' @param init 
 #' @param v Variable to be predicted if given multivariate time series
+#' @param metric Type of metric to evaluate the distance between points
 #' @return The predicted value
 
 knn_past = function(x, k, d, init, v=1, metric="euclidean"){
@@ -28,13 +30,15 @@ knn_past = function(x, k, d, init, v=1, metric="euclidean"){
   
   for (j in init:roof) {
     
-    # Obtenemos la fila de distancias que nos interesa para predicir el instante j+1
-    distances_rowj <- distances[j, 1:j]
+    # Obtenemos la fila de distancias que nos interesa para predicir el instante j+1 suponiendo que 
+    # tenemos toda la informacion de 1 hasta j y desconocemos el futuro
+    distances_rowj <- distances[j - 1, 1:(j - 1)]
     
     # Buscamos las k distancias mas pequenas y luego los indices correspondientes
-    k_nn <- head(which( distances_rowj %in% head(sort.int(distances_rowj, k)), k))
+    #k_nn <- head(which( distances_rowj %in% head(sort.int(distances_rowj, k)), k))
+    k_nn <- head((sort.int(distances_rowj, index.return = TRUE))$ix, k)
     
-    prediction[j - init + 1] <- mean(y[(k_nn + d), v])
+    prediction[j - init + 1] <- weighted.mean(y[(k_nn + d), v], k:1)
   }
   
   ts(prediction)

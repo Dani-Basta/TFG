@@ -21,9 +21,11 @@ knn_next = function(x, k, d, v=1, metric="euclidean"){
   distances <- cdist(neighs[1:roof, 1:(d * m)], matrix(neighs[roof + 1, 1:(d * m)], nrow = 1))
   
   # Buscamos las k distancias mas pequenas y luego los indices correspondientes
-  k_nn <- head( which( distances %in% head(sort.int(distances), k) ), k )
+  #k_nn <- head( which( distances %in% head(sort.int(distances), k) ), k )
+  # Esto: (sort.int(distances, index.return = TRUE))$ix da los indices antiguos de los elementos ordenados
+  k_nn <- head((sort.int(distances, index.return = TRUE))$ix, k)
   
   prediction <- weighted.mean(y[(k_nn + d), v], k:1)
   
-  ts(prediction)
+  prediction
 }
