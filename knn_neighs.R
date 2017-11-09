@@ -11,11 +11,11 @@ knn_neighs = function(y, d) {
 
   # Pre-reservando la matriz
   neighs <- matrix(nrow = roof + 1, ncol = d * m + m)
-  k <- 1
+  col <- 1
   for (i in 1:m) {
     for (j in 1:d) {
-      neighs[, k] <- y[(j:(j + roof)), i]
-      k <- k + 1
+      neighs[, col] <- y[(j:(j + roof)), i]
+      col <- col + 1
     }
   }
   
