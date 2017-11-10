@@ -13,7 +13,7 @@
 knn_optim = function(x, k, kmin, kmax, d, dmin, dmax, v=1){
     require(knn_past)
     require(rdist)
-    
+    y <- matrix(x, ncol = NCOL(x))
     n <- NROW(y)
     m <- NCOL(y)
     
