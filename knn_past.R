@@ -26,8 +26,6 @@ knn_past = function(x, k, d, init, v = 1, metric = "euclidean", weight = "proxim
     # Transform previous 'triangular matrix' in a regular matrix
     distances <- diag(n - d + 1)
     distances[lower.tri(distances, diag = FALSE)] <- raw_distances
-    
-    print(neighs)
 
     for (j in init:roof) {
         
