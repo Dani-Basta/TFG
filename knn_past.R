@@ -15,7 +15,7 @@ knn_past = function(x, k, d, init, v = 1, metric = "euclidean", weight = "proxim
     n <- NROW(y)
     m <- NCOL(y)
     roof <- n - d
-    prediction <- array(dim = n - init)
+    prediction <- array(dim = n - init - d + 1)
     
     # Get 'neighbourhoods' matrix
     neighs <- knn_neighs(y, d)
@@ -24,9 +24,11 @@ knn_past = function(x, k, d, init, v = 1, metric = "euclidean", weight = "proxim
     raw_distances <- rdist(neighs[, 1:(d * m)])
     
     # Transform previous 'triangular matrix' in a regular matrix
-    distances <- diag(n - 1)
+    distances <- diag(n - d + 1)
     distances[lower.tri(distances, diag = FALSE)] <- raw_distances
     
+    print(neighs)
+
     for (j in init:roof) {
         
         # Get row needed from the distances matrix in order to predict instant j+1 asumming that all we
@@ -43,7 +45,7 @@ knn_past = function(x, k, d, init, v = 1, metric = "euclidean", weight = "proxim
                          trend = {k:1})
         
         # Calculate the predicted value
-        prediction[j - init + 1] <- weighted.mean(neighs[k_nn, k * d + v], weights)
+        prediction[j - init + 1] <- weighted.mean(neighs[k_nn, m * d + v], weights)
     }
     
     ts(prediction)
