@@ -6,7 +6,7 @@
 #' @param kmax Maximum value of K to be analyzed
 #' @param d Values of Ds to be analyzed
 #' @param dmin Minimum value of D to be analyzed
-#' @param dmax Maximum value of K to be analyzed
+#' @param dmax Maximum value of D to be analyzed
 #' @param v Variable to be predicted if given multivariate time series
 #' @param metric Type of metric to evaluate the distance between points
 #' @param weight Type of weight to use at the time of the prediction. 3 supported: proximity, same, trend
