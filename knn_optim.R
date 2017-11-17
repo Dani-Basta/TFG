@@ -2,17 +2,13 @@
 #' 
 #' @param x A time series
 #' @param k Values of Ks to be analyzed
-#' @param kmin Minimum value of K to be analyzed
-#' @param kmax Maximum value of K to be analyzed
 #' @param d Values of Ds to be analyzed
-#' @param dmin Minimum value of D to be analyzed
-#' @param dmax Maximum value of D to be analyzed
 #' @param v Variable to be predicted if given multivariate time series
 #' @param metric Type of metric to evaluate the distance between points
 #' @param weight Type of weight to use at the time of the prediction. 3 supported: proximity, same, trend
 #' @return A matrix of errors, optimal K & D
 
-knn_optim = function(x, k, kmin, kmax, d, dmin, dmax, v=1, metric="euclidean", weight="proximity"){
+knn_optim = function(x, k, d, v=1, metric="euclidean", weight="proximity"){
     require(rdist)
     
     y <- matrix(x, ncol = NCOL(x))
@@ -22,18 +18,10 @@ knn_optim = function(x, k, kmin, kmax, d, dmin, dmax, v=1, metric="euclidean", w
     # Calculate all the k and d values to be explored, this depends on the user but default values are also given
     # in case of missing arguments
     if (missing(k)) {
-        if (missing(kmin) || missing(kmax)) {
-            k <- 3:20
-        } else {
-            k <- kmin:kmax
-        }
+        k <- 3:20
     }
     if (missing(d)) {
-        if (missing(dmin) || missing(dmax)) {
-            d <- 3:20
-        } else {
-            d <- dmin:dmax
-        }
+        d <- 3:20
     }
     
     ks <- length(k)
