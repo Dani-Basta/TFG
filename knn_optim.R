@@ -1,13 +1,11 @@
-#' Optimizes the values of K and D for a given Time Serie
+#' Optimizes the values of K and D for a given time series
 #' 
-#' @param x Time serie to analyze
-#' @param k
-#' @param kmin
-#' @param kmax
-#' @param d
-#' @param dmin
-#' @param dmax
-#' @param v
+#' @param x A time series
+#' @param k Values of Ks to be analyzed
+#' @param d Values of Ds to be analyzed
+#' @param v Variable to be predicted if given multivariate time series
+#' @param metric Type of metric to evaluate the distance between points
+#' @param weight Type of weight to use at the time of the prediction. 3 supported: proximity, same, trend
 #' @return A matrix of errors, optimal K & D
 
 knn_optim = function(x, k, kmin, kmax, d, dmin, dmax, v=1){
@@ -17,19 +15,13 @@ knn_optim = function(x, k, kmin, kmax, d, dmin, dmax, v=1){
     n <- NROW(y)
     m <- NCOL(y)
     
+    # Calculate all the k and d values to be explored, this depends on the user but default values are also given
+    # in case of missing arguments
     if (missing(k)) {
-        if (missing(kmin) || missing(kmax)) {
-            k = 3:20
-        } else {
-            k = kmin:kmax
-        }
+        k <- 3:20
     }
     if (missing(d)) {
-        if (missing(dmin) || missing(dmax)) {
-            d = 3:20
-        } else {
-            d = dmin:dmax
-        }
+        d <- 3:20
     }
     
     init <- floor(n*0.7)
