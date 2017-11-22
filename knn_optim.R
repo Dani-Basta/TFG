@@ -8,8 +8,7 @@
 #' @param weight Type of weight to use at the time of the prediction. 3 supported: proximity, same, trend
 #' @return A matrix of errors, optimal K & D
 
-knn_optim = function(x, k, kmin, kmax, d, dmin, dmax, v=1){
-    require(knn_past)
+knn_optim = function(x, k, d, v=1, metric="euclidean", weight="proximity"){
     require(rdist)
     y <- matrix(x, ncol = NCOL(x))
     n <- NROW(y)
@@ -24,21 +23,55 @@ knn_optim = function(x, k, kmin, kmax, d, dmin, dmax, v=1){
         d <- 3:20
     }
     
+    ks <- length(k)
     init <- floor(n*0.7)
-                  
-    errors <- matrix(nrow = k, ncol = d)
-    pred <- matrix(nrow = tail(k, 1), ncol = n - init)
+    errors <- matrix(nrow = ks, ncol = length(d))
+    
     for (i in d) {
-        r <- 1
-        for (j in k) {
-            pred[r,] <- knn_past(x, j, i, init, v)
-            r <- r + 1
+        roof <- n - i
+        
+        # Get 'neighbourhoods' matrix
+        neighs <- knn_neighs(y, i)
+        
+        # Calculate distances between every 'neighbourhood', a 'triangular matrix' is returned
+        raw_distances <- rdist(neighs[, 1:(i * m)])
+        distances <- diag(n - i + 1)
+        
+        # Transform previous 'triangular matrix' in a regular matrix
+        distances[lower.tri(distances, diag = FALSE)] <- raw_distances
+        
+        preds <- matrix(nrow = ks, ncol = roof - init + 1)
+        
+        for (j in init:roof) {
+            
+            # For k = j get the indexes of all neighbors ordered by distance
+            dist_row <- sort.int(distances[j, 1:(j - 1)], index.return = TRUE)
+            
+            for (h in k) {
+              # Get the indexes h nearest neighbors
+              k_nn <- head(dist_row$ix, h)
+              
+              # Calculate the weights for the future computation of the weighted mean 
+              # ------------Falta tratamiento correcto del valor delta------------------
+              weights =  switch(weight, proximity = {1/(distances[k_nn] + 0.0001)},
+                                        same = {rep.int(1,h)},
+                                        trend = {h:1})
+              
+              # Calculate the predicted value
+              preds[h - k[1] + 1, j - init + 1] <- weighted.mean(neighs[k_nn, m * i + v], weights)
+            }
         }
-        errors[,i] <- cdist(pred, x[ (init + 1:n) , v]) 
+        
+        # Calculate error values between the known values and the predicted values, these values go from init to t - 1
+        # and for all Ks
+        errors[, i - d[1] + 1] <- cdist(preds, matrix(neighs[init:(n - i), m * i + v], nrow = 1), metric)
     }
+    
+    # Construction of the list to be returned
     minErr <- which.min(errors)
-    optK <- (minErr %% k) + 1
-    optD <- ceiling( minErr / k )
+    optK <- (minErr %% ks) + 1
+    optD <- ceiling(minErr / ks)
     result <- list(errors = errors, k = optK, d = optD)
+    
     result
 }
