@@ -10,7 +10,6 @@
 
 knn_optim = function(x, k, d, v=1, metric="euclidean", weight="proximity"){
     require(rdist)
-    
     y <- matrix(x, ncol = NCOL(x))
     n <- NROW(y)
     m <- NCOL(y)
