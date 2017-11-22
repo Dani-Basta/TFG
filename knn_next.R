@@ -18,15 +18,14 @@ knn_next = function(x, k, d, v = 1, metric = "euclidean", weight = "proximity") 
     # Get 'neighbourhoods' matrix
     neighs <- knn_neighs(y, d)
     
-    # Calculate distances between the last 'neighbourhood' and each of rest 'neighbourhoods'
+    # Calculate distances between the last 'neighbor' and each of rest 'neighbors'
     distances <- cdist(neighs[1:roof, 1:(d * m)], matrix(neighs[roof + 1, 1:(d * m)], nrow = 1))
     
     # Get the indexes of the k nearest neighbors
     k_nn <- head((sort.int(distances, index.return = TRUE))$ix, k)
     
-    # Calculate the weights for the future computation of the weighted mean 
-    # ------------Falta tratamiento correcto del valor delta------------------
-    weights = switch(weight, proximity = {1/(distances[k_nn] + 0.00001)}, 
+    # Calculate the weights for the future computation of the weighted mean
+    weights = switch(weight, proximity = {1/(distances[k_nn] + .Machine$double.eps ^ 0.5)}, 
                              same = {rep.int(1, k)}, 
                              trend = {k:1})
   

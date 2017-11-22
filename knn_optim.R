@@ -4,12 +4,15 @@
 #' @param k Values of Ks to be analyzed
 #' @param d Values of Ds to be analyzed
 #' @param v Variable to be predicted if given multivariate time series
-#' @param metric Type of metric to evaluate the distance between points
+#' @param distance_metric Type of metric to evaluate the distance between points
+#' @param error_metric Type of metric to evaluate the prediction error
 #' @param weight Type of weight to use at the time of the prediction. 3 supported: proximity, same, trend
 #' @return A matrix of errors, optimal K & D
 
-knn_optim = function(x, k, d, v=1, metric="euclidean", weight="proximity"){
+knn_optim = function(x, k, d, v=1, distance_metric="euclidean", error_metric="MAE", weight="proximity"){
+    require(parallelDist)
     require(rdist)
+    
     y <- matrix(x, ncol = NCOL(x))
     n <- NROW(y)
     m <- NCOL(y)
@@ -24,22 +27,28 @@ knn_optim = function(x, k, d, v=1, metric="euclidean", weight="proximity"){
     }
     
     ks <- length(k)
+    ds <- length(d)
     init <- floor(n*0.7)
     errors <- matrix(nrow = ks, ncol = length(d))
+    distances <- vector("list", ds)
+    
+    #Calculate all distance matrixes
+    j <- 1
+    for (i in d) {
+      # Get 'neighbourhood' matrix
+      neighs <- knn_neighs(y, i)
+      
+      # Calculate distances between every 'neighbor, a 'triangular matrix' is returned (class 'dist')
+      raw_distances <- parDist(neighs[, 1:(i * m)], distance_metric)
+      
+      # Transform previous 'triangular matrix' in a regular matrix
+      distances_new_element <- diag(n - i + 1)
+      distances_new_element[lower.tri(distances, diag = FALSE)] <- raw_distances
+      distances[[j]] <- distances_new_element
+    }
     
     for (i in d) {
         roof <- n - i
-        
-        # Get 'neighbourhoods' matrix
-        neighs <- knn_neighs(y, i)
-        
-        # Calculate distances between every 'neighbourhood', a 'triangular matrix' is returned
-        raw_distances <- rdist(neighs[, 1:(i * m)])
-        distances <- diag(n - i + 1)
-        
-        # Transform previous 'triangular matrix' in a regular matrix
-        distances[lower.tri(distances, diag = FALSE)] <- raw_distances
-        
         preds <- matrix(nrow = ks, ncol = roof - init + 1)
         
         for (j in init:roof) {
@@ -53,7 +62,7 @@ knn_optim = function(x, k, d, v=1, metric="euclidean", weight="proximity"){
               
               # Calculate the weights for the future computation of the weighted mean 
               # ------------Falta tratamiento correcto del valor delta------------------
-              weights =  switch(weight, proximity = {1/(distances[k_nn] + 0.0001)},
+              weights =  switch(weight, proximity = {1/(distances[k_nn] + .Machine$double.eps ^ 0.5)},
                                         same = {rep.int(1,h)},
                                         trend = {h:1})
               
@@ -64,7 +73,7 @@ knn_optim = function(x, k, d, v=1, metric="euclidean", weight="proximity"){
         
         # Calculate error values between the known values and the predicted values, these values go from init to t - 1
         # and for all Ks
-        errors[, i - d[1] + 1] <- cdist(preds, matrix(neighs[init:(n - i), m * i + v], nrow = 1), metric)
+        errors[, i - d[1] + 1] <- cdist(preds, matrix(neighs[init:(n - i), m * i + v], nrow = 1), error_metric)
     }
     
     # Construction of the list to be returned

@@ -10,6 +10,7 @@
 #' @return The predicted value
 
 knn_past = function(x, k, d, init, v = 1, metric = "euclidean", weight = "proximity") {
+    require(parallelDist)
     require(rdist)
     y <- matrix(x, ncol = NCOL(x))
     n <- NROW(y)
@@ -20,8 +21,9 @@ knn_past = function(x, k, d, init, v = 1, metric = "euclidean", weight = "proxim
     # Get 'neighbourhoods' matrix
     neighs <- knn_neighs(y, d)
 
-    # Calculate distances between every 'neighbourhood', a 'triangular matrix' is returned
-    raw_distances <- rdist(neighs[, 1:(d * m)])
+    # Calculate distances between every 'neighbor', a 'triangular matrix' is returned
+    print(neighs[, 1:(d * m)])
+    raw_distances <- parDist(matrix(neighs[, 1:(d * m)], ncol = d * m), metric)
     
     # Transform previous 'triangular matrix' in a regular matrix
     distances <- diag(n - d + 1)
@@ -37,8 +39,7 @@ knn_past = function(x, k, d, init, v = 1, metric = "euclidean", weight = "proxim
         k_nn <- head((sort.int(distances_rowj, index.return = TRUE))$ix, k)
         
         # Calculate the weights for the future computation of the weighted mean 
-        # ------------Falta tratamiento correcto del valor delta------------------
-        weights = switch(weight, proximity = {1/(distances[k_nn] + 0.00001)}, 
+        weights = switch(weight, proximity = {1/(distances[k_nn] + .Machine$double.eps ^ 0.5)}, 
                          same = {rep.int(1, k)}, 
                          trend = {k:1})
         
