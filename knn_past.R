@@ -22,8 +22,12 @@ knn_past = function(x, k, d, init, v = 1, metric = "euclidean", weight = "proxim
     neighs <- knn_neighs(y, d)
 
     # Calculate distances between every 'neighbor', a 'triangular matrix' is returned
-    print(neighs[, 1:(d * m)])
-    raw_distances <- parDist(matrix(neighs[, 1:(d * m)], ncol = d * m), metric)
+    elements <- neighs[, 1:(d * m)]
+    # This happens if d=1 and a univariate time series is given, a very unusual case
+    if (is(elements, "numeric")) {
+      elements <- matrix(elements, nrow = length(elements))
+    }
+    raw_distances <- parDist(elements, metric)
     
     # Transform previous 'triangular matrix' in a regular matrix
     distances <- diag(n - d + 1)

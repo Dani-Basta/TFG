@@ -18,7 +18,7 @@ knn_next = function(x, k, d, v = 1, metric = "euclidean", weight = "proximity") 
     # Get 'neighbourhoods' matrix
     neighs <- knn_neighs(y, d)
     
-    # Calculate distances between the last 'neighbor' and each of rest 'neighbors'
+    # Calculate distances between the last 'neighbourhood' and each of rest 'neighbourhoods'
     distances <- cdist(neighs[1:roof, 1:(d * m)], matrix(neighs[roof + 1, 1:(d * m)], nrow = 1))
     
     # Get the indexes of the k nearest neighbors
