@@ -115,11 +115,11 @@ knn_optim = function(x, k, d, v=1, distance_metric="euclidean", error_metric="MA
 
     errors <- foreach(i = indexes, )  %dopar% {
     	# Obtain the actual row
-    	act_row = floor((i)/ds) + init
+    	act_row <- floor((i)/ds) + init
 
     	# Obtain the index of the actual d and it's value
-    	d_index = (i %% ds) + 1
-    	act_d = d[d_index]
+    	d_index <- (i %% ds) + 1
+    	act_d <- d[d_index]
 
     	# Obtain the distances matrix for the actual d
     	distances_element <- distances[[d_index]]
@@ -135,7 +135,7 @@ knn_optim = function(x, k, d, v=1, distance_metric="euclidean", error_metric="MA
     		k_nn <- head(dist_row$ix, h)
               
             # Calculate the weights for the future computation of the weighted mean
-            weights =  switch(weight, 
+            weights <- switch(weight, 
             					proximity = {1/(distances_element[k_nn] + .Machine$double.eps ^ 0.5)},
             					same = {rep.int(1,h)},
             					trend = {h:1}
