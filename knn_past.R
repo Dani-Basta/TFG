@@ -32,10 +32,8 @@ knn_past = function(x, k, d, init, v = 1, metric = "euclidean", weight = "proxim
     prediction <- array(dim = n - init - d + 1)
     
     # Get elements matrix
-    elements_matrix_aux <- knn_neighs(y, d)
-
-    # 
-    elements_matrix <- elements_matrix_aux[, 1:(d * m)]
+    elements_matrix <- knn_neighs(y, d)
+    elements_matrix <- elements_matrix[, 1:(d * m)]
     
     # This happens if d=1 and a univariate time series is given, a very unusual case
     if (is(elements, "numeric")) {
