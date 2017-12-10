@@ -28,41 +28,41 @@ knn_past = function(x, k, d, init, v = 1, metric = "euclidean", weight = "proxim
     y <- matrix(x, ncol = NCOL(x))
     n <- NROW(y)
     m <- NCOL(y)
-    roof <- n - d
+    last_elem <- n - d
     prediction <- array(dim = n - init - d + 1)
     
     # Get elements matrix
-    elements_matrix <- knn_neighs(y, d)
-    elements_matrix <- elements_matrix[, 1:(d * m)]
+    elements_matrix <- knn_elements(y, d)
+    curr_elems <- elements_matrix[, 1:(d * m)]
     
     # This happens if d=1 and a univariate time series is given, a very unusual case
-    if (is(elements, "numeric")) {
-      elements_matrix <- elements_matrix(elements, nrow = length(elements))
+    if (is(curr_elems, "numeric")) {
+      curr_elems <- matrix(curr_elems, nrow = length(curr_elems))
     }
     
     # Calculate distances between every element, a 'triangular matrix' is returned
-    raw_distances <- parDist(elements_matrix, metric)
+    raw_distances <- parDist(curr_elems, metric)
     
     # Transform previous 'triangular matrix' in a regular matrix
     distances <- diag(n - d + 1)
     distances[lower.tri(distances, diag = FALSE)] <- raw_distances
 
-    for (j in init:roof) {
+    for (j in init:last_elem) {
         
         # Get row needed from the distances matrix in order to predict instant j+1 asumming that all we
         # know about the time series is instants 1 to j
         distances_rowj <- distances[j, 1:(j - 1)]
         
-        # Get the indexes of the k nearest neighbors
+        # Get the indexes of the k nearest neighbors(elements)
         k_nn <- head((sort.int(distances_rowj, index.return = TRUE))$ix, k)
         
         # Calculate the weights for the future computation of the weighted mean 
-        weights = switch(weight, proximity = {1/(distances[k_nn] + .Machine$double.eps ^ 0.5)}, 
-                                 same = {rep.int(1, k)}, 
-                                 trend = {k:1})
+        weights = switch(weight, proximity = {1/(distances[k_nn] + .Machine$double.xmin)}, 
+                         same = {rep.int(1, k)}, 
+                         trend = {k:1})
         
         # Calculate the predicted value
-        prediction[j - init + 1] <- weighted.mean(neighs[k_nn, m * d + v], weights)
+        prediction[j - init + 1] <- weighted.mean(elements_matrix[k_nn, m * d + v], weights)
     }
     
     ts(prediction)

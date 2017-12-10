@@ -2,7 +2,7 @@
 #'
 #' @param x A time series
 #' @param k Number of neighbors
-#' @param d Length of the 'neighbourhoods'
+#' @param d Length of the 'elements'
 #' @param v Variable to be predicted if given multivariate time series
 #' @param metric Type of metric to evaluate the distance between points
 #' @param weight Type of weight to use at the time of the prediction. 3 supported: proximity, same, trend 
@@ -13,24 +13,24 @@ knn_next = function(x, k, d, v = 1, metric = "euclidean", weight = "proximity") 
     y <- matrix(x, ncol = NCOL(x))
     n <- NROW(y)
     m <- NCOL(y)
-    roof <- n - d
+    last_elem <- n - d
     
-    # Get 'neighbourhoods' matrix
-    neighs <- knn_neighs(y, d)
+    # Get 'elements' matrix
+    elements_matrix <- knn_elements(y, d, v)
     
-    # Calculate distances between the last 'neighbourhood' and each of rest 'neighbourhoods'
-    distances <- cdist(neighs[1:roof, 1:(d * m)], matrix(neighs[roof + 1, 1:(d * m)], nrow = 1))
+    # Calculate distances between the last 'element' and each of rest 'elements'
+    distances <- cdist(elements_matrix[1:last_elem, 1:(d * m)], matrix(elements_matrix[last_elem + 1, 1:(d * m)], nrow = 1))
     
-    # Get the indexes of the k nearest neighbors
+    # Get the indexes of the k nearest neighbors(elements)
     k_nn <- head((sort.int(distances, index.return = TRUE))$ix, k)
     
     # Calculate the weights for the future computation of the weighted mean
-    weights = switch(weight, proximity = {1/(distances[k_nn] + .Machine$double.eps ^ 0.5)}, 
+    weights = switch(weight, proximity = {1/(distances[k_nn] + .Machine$double.xmin)}, 
                              same = {rep.int(1, k)}, 
                              trend = {k:1})
   
     # Calculate the predicted value
-    prediction <- weighted.mean(neighs[k_nn, m * d + v], weights)
+    prediction <- weighted.mean(elements_matrix[k_nn, m * d + v], weights)
     
     prediction
 }
