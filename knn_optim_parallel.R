@@ -35,6 +35,9 @@ knn_optim = function(x, k, d, v=1, distance_metric="euclidean", error_metric="MA
     ds <- length(d)
     distances <- vector("list", ds)
     
+    # In order to paralelise we calculate the distances matrix just once for each d, as the distance variates 
+    # with the number of values that characterise each element.
+    
     #Calculate all distances matrixes
     j <- 1
     for (i in d) {
@@ -70,6 +73,13 @@ knn_optim = function(x, k, d, v=1, distance_metric="euclidean", error_metric="MA
     )
     
     init <- floor(n*0.7)
+    
+    # Once we have all distance matrixes we proceed to evaluate in parallel with a different combination
+    # of d and the last row to evaluate.
+    # For each of the combinations we order all the neighbors(elements) by proximity and evaluate with 
+    # all the posible values for k, taking each time the k-Nearest ones, to make k predictions.
+    # Finally when we have all the predictions we calculate the error for each prediction and store them
+    # in the variable of the foreach loop.
 
     ## TODO: eliminar las combinaciones the fila y d que no son viables (falta de futuro)
     indexes = 0:((n-init+1)*ds -1)
