@@ -29,11 +29,11 @@ knn_past = function(x, k, d, init, v = 1, metric = "euclidean", weight = "proxim
     n <- NROW(y)
     m <- NCOL(y)
     last_elem <- n - d
-    prediction <- array(dim = n - init - d + 1)
+    predictions <- array(dim = n - init)
     
     # Get elements matrix
-    elements_matrix <- knn_elements(y, d)
-    curr_elems <- elements_matrix[, 1:(d * m)]
+    elements_matrix <- knn_elements(y, d, v)
+    curr_elems <- elements_matrix[1:last_elem, 1:(d * m)]
     
     # This happens if d=1 and a univariate time series is given, a very unusual case
     if (is(curr_elems, "numeric")) {
@@ -44,10 +44,11 @@ knn_past = function(x, k, d, init, v = 1, metric = "euclidean", weight = "proxim
     raw_distances <- parDist(curr_elems, metric)
     
     # Transform previous 'triangular matrix' in a regular matrix
-    distances <- diag(n - d + 1)
+    distances <- diag(n - d)
     distances[lower.tri(distances, diag = FALSE)] <- raw_distances
-
-    for (j in init:last_elem) {
+    
+    prediction_index <- 1
+    for (j in (init - d + 1):last_elem) {
         
         # Get row needed from the distances matrix in order to predict instant j+1 asumming that all we
         # know about the time series is instants 1 to j
@@ -62,8 +63,9 @@ knn_past = function(x, k, d, init, v = 1, metric = "euclidean", weight = "proxim
                          trend = {k:1})
         
         # Calculate the predicted value
-        prediction[j - init + 1] <- weighted.mean(elements_matrix[k_nn, m * d + v], weights)
+        predictions[prediction_index] <- weighted.mean(elements_matrix[k_nn, m * d + 1], weights)
+        prediction_index <- prediction_index + 1
     }
     
-    ts(prediction)
+    predictions
 }

@@ -30,7 +30,7 @@ knn_next = function(x, k, d, v = 1, metric = "euclidean", weight = "proximity") 
                              trend = {k:1})
   
     # Calculate the predicted value
-    prediction <- weighted.mean(elements_matrix[k_nn, m * d + v], weights)
+    prediction <- weighted.mean(elements_matrix[k_nn, m * d + 1], weights)
     
     prediction
 }
