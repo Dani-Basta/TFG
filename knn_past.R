@@ -4,10 +4,10 @@
 #'
 #' @param x A time series
 #' @param k Number of neighbors
-#' @param d Length of each group of elements
+#' @param d Length of each of the elements
 #' @param init A value that has to satisfy d <= init < n, values are predicted from this point of the time series to the end
 #' @param v Variable to be predicted if given multivariate time series
-#' @param metric Type of metric to evaluate the distance between points. Many metrics are supported: euclidean, manhattan, 
+#' @param distance_metric Type of metric to evaluate the distance between points. Many metrics are supported: euclidean, manhattan, 
 #' dynamic time warping, camberra and others. For more information about the supported metrics check the values that 'method' 
 #' argument of function parDist (from parallelDist package) can take as this is the function used to calculate the distances. 
 #' Link to the package info: https://cran.r-project.org/web/packages/parallelDist
@@ -22,9 +22,8 @@
 #' }
 #' @return The predicted value
 
-knn_past = function(x, k, d, init, v = 1, metric = "euclidean", weight = "proximity") {
+knn_past = function(x, k, d, v = 1, init, distance_metric = "euclidean", weight = "proximity") {
     require(parallelDist)
-    require(rdist)
     y <- matrix(x, ncol = NCOL(x))
     n <- NROW(y)
     m <- NCOL(y)
@@ -32,19 +31,18 @@ knn_past = function(x, k, d, init, v = 1, metric = "euclidean", weight = "proxim
     predictions <- array(dim = n - init)
     
     # Get elements matrix
-    elements_matrix <- knn_elements(y, d, v)
-    curr_elems <- elements_matrix[1:last_elem, 1:(d * m)]
+    elements_matrix <- knn_elements(y, d)
     
     # This happens if d=1 and a univariate time series is given, a very unusual case
-    if (is(curr_elems, "numeric")) {
-      curr_elems <- matrix(curr_elems, nrow = length(curr_elems))
+    if (is(elements_matrix, "numeric")) {
+      elements_matrix <- matrix(elements_matrix, nrow = length(curr_elems))
     }
     
     # Calculate distances between every element, a 'triangular matrix' is returned
-    raw_distances <- parDist(curr_elems, metric)
-    
+    raw_distances <- parDist(elements_matrix, distance_metric)
+   
     # Transform previous 'triangular matrix' in a regular matrix
-    distances <- diag(n - d)
+    distances <- diag(last_elem + 1)
     distances[lower.tri(distances, diag = FALSE)] <- raw_distances
     
     prediction_index <- 1
@@ -63,7 +61,7 @@ knn_past = function(x, k, d, init, v = 1, metric = "euclidean", weight = "proxim
                          trend = {k:1})
         
         # Calculate the predicted value
-        predictions[prediction_index] <- weighted.mean(elements_matrix[k_nn, m * d + 1], weights)
+        predictions[prediction_index] <- weighted.mean(y[k_nn + d, v], weights)
         prediction_index <- prediction_index + 1
     }
     

@@ -1,24 +1,23 @@
-#' Creates a matrix to be used for calculating distances and errors
+#' Creates a matrix to be used for calculating distances
 #'
 #' @param y A matrix
-#' @param d Length of the 'elements'
-#' @return A matrix to be used for calculating distances and errors
+#' @param d Length of each of the elements
+#' @return A matrix to be used for calculating distances
 
-knn_elements = function(y, d, v) {
+knn_elements = function(y, d) {
     n <- NROW(y)
     m <- NCOL(y)
+    last_elem <- n - d
     
-    # Fill matrix in a way in which every row has a 'element'
-    elements_matrix <- matrix(nrow = n, ncol = d * m + 1)
+    # Fill matrix in a way in which every row has an 'element'
+    elements_matrix <- matrix(nrow = last_elem + 1, ncol = d * m)
     col <- 1
     for (i in 1:m) {
         for (j in 1:d) {
-            elements_matrix[, col] <- c(y[(j:n), i], rep(NA, j - 1))
+            elements_matrix[, col] <- y[(j:(j + last_elem)), i]
             col <- col + 1
         }
     }
-
-    elements_matrix[1:(n - d), d * m + 1] <- y[(d + 1):n, v]
     
-    elements_matrix[1:(n - 1),]
+    elements_matrix
 }
