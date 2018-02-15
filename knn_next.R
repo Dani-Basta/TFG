@@ -41,12 +41,8 @@ knn_next = function(x, k, d, v = 1, distance_metric = "euclidean", weight = "pro
     distances[lower.tri(distances, diag = FALSE)] <- raw_distances
     distances <- distances[last_elem + 1, 1:last_elem]
     
-    print(distances)
-    
     # Get the indexes of the k nearest neighbors(elements)
     k_nn <- head((sort.int(distances, index.return = TRUE))$ix, k)
-    
-    print(k_nn)
     
     # Calculate the weights for the future computation of the weighted mean
     weights = switch(weight, proximity = {1/(distances[k_nn] + .Machine$double.xmin)}, 

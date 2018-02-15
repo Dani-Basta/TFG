@@ -36,23 +36,23 @@ knn_optim = function(x, k, d, v=1, distance_metric="euclidean", error_metric="MA
     #Calculate all distances matrixes
     j <- 1
     for (i in d) {
-      # Get elements matrix
-      elements_matrix <- knn_elements(y, i)
-      
-       # Calculate distances between the last element and each of the others elements
-      curr_elems <- elements_matrix[, 1:(i * m)]
-      # This happens if d=1 and a univariate time series is given, a very unusual case
-      if (is(curr_elems, "numeric")) {
-        curr_elems <- matrix(curr_elems, nrow = length(curr_elems))
-      }
-      raw_distances <- parDist(curr_elems, distance_metric)
-      
-      # Transform previous 'triangular matrix' in a regular matrix
-      distances_new_element <- diag(n - i + 1)
-      distances_new_element[lower.tri(distances_new_element, diag = FALSE)] <- raw_distances
-      distances[[j]] <- distances_new_element
-      
-      j <- j + 1
+        # Get elements matrix
+        curr_elems <- knn_elements(y, i)
+        
+        # This happens if d=1 and a univariate time series is given, a very unusual case
+        if (is(curr_elems, "numeric")) {
+            curr_elems <- matrix(curr_elems, nrow = length(curr_elems))
+        }
+        
+        # Calculate distances between the last element and each of the others elements
+        raw_distances <- parDist(curr_elems, distance_metric)
+        
+        # Transform previous 'triangular matrix' in a regular matrix
+        distances_new_element <- diag(n - i + 1)
+        distances_new_element[lower.tri(distances_new_element, diag = FALSE)] <- raw_distances
+        distances[[j]] <- distances_new_element
+        
+        j <- j + 1
     }
     
     
@@ -74,18 +74,22 @@ knn_optim = function(x, k, d, v=1, distance_metric="euclidean", error_metric="MA
               k_nn <- head(dist_row$ix, h)
               
               # Calculate the weights for the future computation of the weighted mean
-              weights =  switch(weight, proximity = {1/(distances_element[k_nn] + .Machine$double.xmin)},
-                                        same = {rep.int(1,h)},
-                                        trend = {h:1})
+              weights =  switch(weight, 
+                                proximity = {1/(distances_element[k_nn] + .Machine$double.xmin)},
+                                same = {rep.int(1,h)},
+                                trend = {h:1}
+                            )
               
               # Calculate the predicted value
-              preds[h - k[1] + 1, j - init + 1] <- weighted.mean(elements_matrix[k_nn, m * i + v], weights)
+              #preds[h - k[1] + 1, j - init + 1] <- weighted.mean(elements_matrix[k_nn, m * i + v], weights)
+              preds[h - k[1] + 1, j - init + 1] <- weighted.mean(y[k_nn + i, v], weights)
             }
         }
         
         # Calculate error values between the known values and the predicted values, these values go from init to t - 1
         # and for all Ks
-        errors[, i - d[1] + 1] <- cdist(preds, matrix(elements_matrix[init:(n - i), m * i + v], nrow = 1), error_metric)
+        #errors[, i - d[1] + 1] <- cdist(preds, matrix(elements_matrix[init:(n - i), m * i + v], nrow = 1), error_metric)
+        errors[, i - d[1] + 1] <- cdist(preds, matrix(y[init:(n - i), v], nrow = 1), error_metric)
         
         index <- index + 1
     }
