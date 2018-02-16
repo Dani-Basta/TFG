@@ -20,7 +20,7 @@
 #' }
 #' @return A matrix of errors, optimal K & D
 
-knn_optim = function(x, k, d, v=1, distance_metric="euclidean", error_metric="MAE", weight="proximity"){
+knn_optim_parallel = function(x, k, d, v=1, distance_metric="euclidean", error_metric="MAE", weight="proximity"){
     require(parallelDist)
     require(forecast)
     require(foreach)
@@ -90,8 +90,8 @@ knn_optim = function(x, k, d, v=1, distance_metric="euclidean", error_metric="MA
     # in the variable of the foreach loop.
     
     init <- floor(n * 0.7)
-    indexes <- 0:((n - init)*ds - 1)
-    clust <- makeCluster(parallel::detectCores())
+    #_clust <- makeCluster(parallel::detectCores())
+    clust <- makeCluster(1)
     registerDoParallel(clust)
     
     raw_preds <- foreach(act_row = init:(n - 1)) %:% foreach(act_d = iter(d)) %dopar% {
@@ -114,7 +114,8 @@ knn_optim = function(x, k, d, v=1, distance_metric="euclidean", error_metric="MA
               
             # Calculate the weights for the future computation of the weighted mean
             weights <- switch(weight, 
-            					proximity = {1/(distances_element[k_nn] + .Machine$double.xmin)},
+            					#proximity = {1/(distances_element[k_nn] + .Machine$double.xmin)},
+            					proximity = {1/(distances_element[k_nn] + 1)},
             					same = {rep.int(1,k_value)},
             					trend = {k_value:1})
           
