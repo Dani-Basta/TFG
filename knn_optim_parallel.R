@@ -81,7 +81,6 @@ knn_optim_parallel = function(x, k, d, v=1, distance_metric="euclidean", error_m
         j <- j + 1
     }
     
-    
     # Once we have all distances matrixes we proceed to evaluate in parallel with a different combination
     # of d and row.
     # For each of the combinations we order all the neighbors(elements) by proximity and evaluate with 
@@ -90,9 +89,10 @@ knn_optim_parallel = function(x, k, d, v=1, distance_metric="euclidean", error_m
     # in the variable of the foreach loop.
     
     init <- floor(n * 0.7)
-    #_clust <- makeCluster(parallel::detectCores())
-    clust <- makeCluster(1)
-    registerDoParallel(clust)
+    indexes <- 0:((n - init)*ds - 1)
+    #clust <- makeCluster(parallel::detectCores()-1)
+    clust <- makeCluster(2)
+    registerDoParallel(cl = clust)
     
     raw_preds <- foreach(act_row = init:(n - 1)) %:% foreach(act_d = iter(d)) %dopar% {
     	# Obtain the distances matrix for the actual d
@@ -101,10 +101,10 @@ knn_optim_parallel = function(x, k, d, v=1, distance_metric="euclidean", error_m
       row_index <- act_row - act_d + 1
       preds <- vector(mode = "numeric", ks)
         
-      distances_element <- distances[[d_index]]
+      distances_element <- distances[[d_index]][row_index, 1:(row_index - 1)]
     	  
     	# For k = act_row get the indexes of all neighbors(elements) ordered by distance
-    	dist_row <- sort.int(distances_element[row_index, 1:(row_index - 1)], index.return = TRUE)
+    	dist_row <- sort.int(distances_element, index.return = TRUE)
     
     	for (k_index in 1:ks) {
     		k_value <- k[k_index]
@@ -114,7 +114,6 @@ knn_optim_parallel = function(x, k, d, v=1, distance_metric="euclidean", error_m
               
             # Calculate the weights for the future computation of the weighted mean
             weights <- switch(weight, 
-            					#proximity = {1/(distances_element[k_nn] + .Machine$double.xmin)},
             					proximity = {1/(distances_element[k_nn] + 1)},
             					same = {rep.int(1,k_value)},
             					trend = {k_value:1})
@@ -126,6 +125,7 @@ knn_optim_parallel = function(x, k, d, v=1, distance_metric="euclidean", error_m
     	list(d_index = d_index, instant_index = act_row - init + 1, preds = preds)
     }
     
+    registerDoSEQ()
     stopCluster(clust)
     
     # Change the format of raw_preds to d matrixes of k x (n - init) dimension in order
@@ -148,7 +148,7 @@ knn_optim_parallel = function(x, k, d, v=1, distance_metric="euclidean", error_m
     real_values <- y[(init + 1):n, v]
     for (i in 1:ds) {
       for (ind in 1:ks) {
-        errors[ind, i - d[1] + 1] <- accuracy(ts(preds_list[[i]][ind, ]), matrix(real_values))[error_type]
+        errors[ind, i] <- accuracy(ts(preds_list[[i]][ind, ]), matrix(real_values))[error_type]
       }
     }
     

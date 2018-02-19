@@ -25,16 +25,17 @@ knn_optim = function(x, k, d, v=1, distance_metric="euclidean", error_metric="MA
     # Calculate all the k and d values to be explored. If a number is given, it creates a vector from 1 to k.
     # Otherwise it will just make sure that the vector is ordered
     if (length(k) == 1) {
-        k <- 1:k
+      k <- 1:k
     } else if (is.unsorted(k)) {
-        k <- sort(k)
+      k <- sort(k)
     }
     if (length(d) == 1) {
-        d <- 1:d
+      d <- 1:d
     } else if (is.unsorted(d)) {
-        k <- sort(d)
+      d <- sort(d)
     }
     
+    # Initialization of variables to be used
     y <- matrix(x, ncol = NCOL(x))
     n <- NROW(y)
     m <- NCOL(y)
@@ -85,10 +86,9 @@ knn_optim = function(x, k, d, v=1, distance_metric="euclidean", error_metric="MA
               
               # Calculate the weights for the future computation of the weighted mean
               weights =  switch(weight, 
-                                #proximity = {1/(distances_element[k_nn] + .Machine$double.xmin)},
                                 proximity = {1/(distances_element[k_nn] + 1)},
                                 same = {rep.int(1,k_value )},
-                                trend = {k_value:1}
+                                trend = {k_value :1}
                             )
               
               # Calculate the predicted value
