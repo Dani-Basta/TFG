@@ -81,8 +81,6 @@ knn_optim_parallel = function(x, k, d, v=1, distance_metric="euclidean", error_m
         j <- j + 1
     }
     
-    print(distances)
-    
     # Once we have all distances matrixes we proceed to evaluate in parallel with a different combination
     # of d and row.
     # For each of the combinations we order all the neighbors(elements) by proximity and evaluate with 
@@ -143,8 +141,6 @@ knn_optim_parallel = function(x, k, d, v=1, distance_metric="euclidean", error_m
         preds_list[[elem$d_index]][, elem$instant_index] <- elem$preds
       }
     }
-    
-    print(preds_list)
     
     # Calculate error values between the known values and the predicted values, these values go from init to t - 1
     # and for all Ks
