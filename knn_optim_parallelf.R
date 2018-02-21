@@ -4,11 +4,6 @@
 #' @param k Values of Ks to be analyzed
 #' @param d Values of Ds to be analyzed
 #' @param v Variable to be predicted
-#' @param distance_metric Type of metric to evaluate the distance between points. Many metrics are supported: euclidean, manhattan, 
-#' dynamic time warping, camberra and others. For more information about the supported metrics check the values that 'method' 
-#' argument of function parDist (from parallelDist package) can take as this is the function used to calculate the distances. 
-#' Link to the package info: https://cran.r-project.org/web/packages/parallelDist
-#' Some of the values that this argument can take are "euclidean", "manhattan", "dtw", "camberra", "chord".
 #' @param error_metric Type of metric to evaluate the prediction error
 #' @param weight Type of weight to use at the time of calculating the predicted value with a weighted mean. 
 #- Three supported: proximity, same, trend.
@@ -20,7 +15,7 @@
 #' }
 #' @return A matrix of errors, optimal K & D
 
-knn_optim_parallelf = function(x, k, d, v=1, distance_metric="euclidean", error_metric="MAE", weight="proximity", file){
+knn_optim_parallelf = function(x, k, d, v=1, error_metric="MAE", weight="proximity", file){
   require(parallelDist)
   require(forecast)
   require(foreach)
