@@ -89,7 +89,6 @@ knn_optim_parallel = function(x, k, d, v=1, distance_metric="euclidean", error_m
     # in the variable of the foreach loop.
     
     init <- floor(n * 0.7)
-    indexes <- 0:((n - init)*ds - 1)
     #clust <- makeCluster(parallel::detectCores()-1)
     clust <- makeCluster(2)
     registerDoParallel(cl = clust)
