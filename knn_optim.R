@@ -54,7 +54,7 @@ knn_optim = function(x, k, d, v=1, distance_metric="euclidean", error_metric="MA
       if (is(elements_matrix, "numeric")) {
         elements_matrix <- matrix(elements_matrix, nrow = length(curr_elems))
       }
-      raw_distances <- parDist(elements_matrix, distance_metric)
+      raw_distances <- parDist(elements_matrix, distance_metric, threads = 1)
       
       # Transform previous 'triangular matrix' in a regular matrix
       distances_new_element <- diag(n - i + 1)
@@ -74,10 +74,9 @@ knn_optim = function(x, k, d, v=1, distance_metric="euclidean", error_metric="MA
         preds <- matrix(nrow = ks, ncol = n - init)
         distances_element <- distances[[index]]
         for (j in (init - i + 1):last_elem) {
-            distances_row <- distances_element[j, 1:(j - 1)]
-          
+            
             # For k = j get the indexes of all elements ordered by distance
-            dist_row <- sort.int(distances_row, index.return = TRUE)
+            dist_row <- sort.int(distances_element[j, 1:(j - 1)], index.return = TRUE)
             
             for (k_index in 1:ks) {
               k_value <- k[k_index]
@@ -87,7 +86,7 @@ knn_optim = function(x, k, d, v=1, distance_metric="euclidean", error_metric="MA
               
               # Calculate the weights for the future computation of the weighted mean
               weights =  switch(weight, 
-                                proximity = {1/(distances_row[k_nn] + 1)},
+                                proximity = {1/(distances_element[k_nn] + 1)},
                                 same = {rep.int(1,k_value )},
                                 trend = {k_value :1}
                             )

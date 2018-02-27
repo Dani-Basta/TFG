@@ -20,7 +20,7 @@
 #' }
 #' @return A matrix of errors, optimal K & D
 
-knn_optim_parallel = function(x, k, d, v=1, distance_metric="euclidean", error_metric="MAE", weight="proximity"){
+knn_optim_parallel = function(x, k, d, v=1, distance_metric="euclidean", error_metric="MAE", weight="proximity", threads=2){
     require(parallelDist)
     require(forecast)
     require(foreach)
@@ -69,9 +69,9 @@ knn_optim_parallel = function(x, k, d, v=1, distance_metric="euclidean", error_m
         # Calculate distances between the last 'element' and each of the others 'elements'
         # This happens if d=1 and a univariate time series is given, a very unusual case
         if (is(elements_matrix, "numeric")) {
-          elements_matrix <- matrix(elements_matrix, nrow = length(curr_elems))
+            elements_matrix <- matrix(elements_matrix, nrow = length(curr_elems))
         }
-        raw_distances <- parDist(elements_matrix, distance_metric)
+        raw_distances <- parDist(elements_matrix, distance_metric, threads = threads)
         
         # Transform previous 'triangular matrix' in a regular matrix
         distances_new_element <- diag(n - i + 1)
@@ -90,38 +90,38 @@ knn_optim_parallel = function(x, k, d, v=1, distance_metric="euclidean", error_m
     
     init <- floor(n * 0.7)
     #clust <- makeCluster(parallel::detectCores()-1)
-    clust <- makeCluster(2)
+    clust <- makeCluster(threads)
     registerDoParallel(cl = clust)
     
     raw_preds <- foreach(act_row = init:(n - 1)) %:% foreach(act_d = iter(d)) %dopar% {
-    	# Obtain the distances matrix for the actual d
-      # TODO: eliminar las variables para evitar duplicación innecesaria de memoria. De momento se deja así para simplificar cambios
-      d_index <- match(act_d, d)
-      row_index <- act_row - act_d + 1
-      preds <- vector(mode = "numeric", ks)
+        # Obtain the distances matrix for the actual d
+        # TODO: eliminar las variables para evitar duplicación innecesaria de memoria. De momento se deja así para simplificar cambios
+        d_index <- match(act_d, d)
+        row_index <- act_row - act_d + 1
+        preds <- vector(mode = "numeric", ks)
         
-      distances_element <- (distances[[d_index]])[row_index, 1:(row_index - 1)]
-    	  
-    	# For k = act_row get the indexes of all neighbors(elements) ordered by distance
-    	dist_row <- sort.int(distances_element, index.return = TRUE)
-    
-    	for (k_index in 1:ks) {
-    		k_value <- k[k_index]
-    		
-    		# Get the indexes k nearest neighbors(elements)
-    		k_nn <- head(dist_row$ix, k_value)
-              
+        distances_element <- (distances[[d_index]])[row_index, 1:(row_index - 1)]
+        
+        # For k = act_row get the indexes of all neighbors(elements) ordered by distance
+        dist_row <- sort.int(distances_element, index.return = TRUE)
+        
+        for (k_index in 1:ks) {
+            k_value <- k[k_index]
+            
+            # Get the indexes k nearest neighbors(elements)
+            k_nn <- head(dist_row$ix, k_value)
+            
             # Calculate the weights for the future computation of the weighted mean
             weights <- switch(weight, 
-            					proximity = {1/(distances_element[k_nn] + 1)},
-            					same = {rep.int(1,k_value)},
-            					trend = {k_value:1})
-          
+                              proximity = {1/(distances_element[k_nn] + 1)},
+                              same = {rep.int(1,k_value)},
+                              trend = {k_value:1})
+            
             # Calculate the predicted value 
             preds[k_index] <- weighted.mean(y[k_nn + act_d, v], weights)
-    	}
-    	
-    	list(d_index = d_index, instant_index = act_row - init + 1, preds = preds)
+        }
+        
+        list(d_index = d_index, instant_index = act_row - init + 1, preds = preds)
     }
     
     registerDoSEQ()
@@ -131,14 +131,14 @@ knn_optim_parallel = function(x, k, d, v=1, distance_metric="euclidean", error_m
     preds_list <- vector("list", ds)
     j <- 1
     for (i in d) {
-      preds_list[[j]] <- matrix(nrow = ks, ncol = n - init)
-      j <- j + 1
+        preds_list[[j]] <- matrix(nrow = ks, ncol = n - init)
+        j <- j + 1
     }
     
     for (l_elems in raw_preds) {
-      for (elem in l_elems){
-        preds_list[[elem$d_index]][, elem$instant_index] <- elem$preds
-      }
+        for (elem in l_elems) {
+            preds_list[[elem$d_index]][, elem$instant_index] <- elem$preds
+        }
     }
     
     # Calculate error values between the known values and the predicted values, these values go from init to t - 1
@@ -146,9 +146,9 @@ knn_optim_parallel = function(x, k, d, v=1, distance_metric="euclidean", error_m
     errors <- matrix(nrow = ks, ncol = ds)
     real_values <- y[(init + 1):n, v]
     for (i in 1:ds) {
-      for (ind in 1:ks) {
-        errors[ind, i] <- accuracy(ts(preds_list[[i]][ind, ]), matrix(real_values))[error_type]
-      }
+        for (ind in 1:ks) {
+            errors[ind, i] <- accuracy(ts(preds_list[[i]][ind, ]), matrix(real_values))[error_type]
+        }
     }
     
     # Construction of the list to be returned
@@ -157,5 +157,5 @@ knn_optim_parallel = function(x, k, d, v=1, distance_metric="euclidean", error_m
     optD <- d[ceiling(index_min_error / ks)]
     result <- list(errors = errors, k = optK, d = optD)
     
-    result
+    return(result)
 }
