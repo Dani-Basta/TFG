@@ -22,16 +22,11 @@ knn_optim = function(x, k, d, v=1, distance_metric="euclidean", error_metric="MA
                         MAPE = {5}
     )
     
-    # Calculate all the k and d values to be explored. If a number is given, it creates a vector from 1 to k.
-    # Otherwise it will just make sure that the vector is ordered
-    if (length(k) == 1) {
-      k <- 1:k
-    } else if (is.unsorted(k)) {
+    # Sort k or d vector if they are unsorted
+    if (is.unsorted(k)) {
       k <- sort(k)
     }
-    if (length(d) == 1) {
-      d <- 1:d
-    } else if (is.unsorted(d)) {
+    if (is.unsorted(d)) {
       d <- sort(d)
     }
     
