@@ -1,4 +1,4 @@
-#' Creates a matrix to be used for calculating distances
+#' Create a matrix to be used for calculating distances
 #'
 #' @param y A matrix
 #' @param d Length of each of the elements
