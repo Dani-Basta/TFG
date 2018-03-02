@@ -20,9 +20,10 @@
 #'   \item{trend}{nearest neighbor is assigned with weight k, second closest neighbor with weight k-1, and so on until the 
 #'                least nearest neighbor which is assigned with a weight of 1.}
 #' }
+#' @param threads Number of threads to be used when parallelizing distances calculation
 #' @return The predicted value
 
-knn_past = function(x, k, d, v = 1, init, distance_metric = "euclidean", weight = "proximity") {
+knn_past = function(x, k, d, v = 1, init, distance_metric = "euclidean", weight = "proximity", threads = 2) {
     require(parallelDist)
     y <- matrix(x, ncol = NCOL(x))
     n <- NROW(y)
@@ -39,7 +40,7 @@ knn_past = function(x, k, d, v = 1, init, distance_metric = "euclidean", weight 
     }
     
     # Calculate distances between every element, a 'triangular matrix' is returned
-    raw_distances <- parDist(elements_matrix, distance_metric)
+    raw_distances <- parDist(elements_matrix, distance_metric, threads = threads)
    
     # Transform previous 'triangular matrix' in a regular matrix
     distances <- diag(last_elem + 1)
