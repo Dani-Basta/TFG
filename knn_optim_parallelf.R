@@ -1,4 +1,4 @@
-#' Optimizes the values of K and D for a given time series
+#' Optimize the values of K and D for a given time series
 #' 
 #' @param x A time series
 #' @param k Values of Ks to be analyzed
@@ -13,9 +13,11 @@
 #'   \item{trend}{nearest neighbor is assigned with weight k, second closest neighbor with weight k-1, and so on until the 
 #'                least nearest neighbor which is assigned with a weight of 1.}
 #' }
+#' @param threads Number of threads to be used when parallelizing
+#' @param file Name or id of the files where the distances matrixes are saved
 #' @return A matrix of errors, optimal K & D
 
-knn_optim_parallelf = function(x, k, d, v=1, error_metric="MAE", weight="proximity", threads = 3, file){
+knn_optim_parallelf = function(x, k, d, v = 1, error_metric = "MAE", weight = "proximity", threads = 3, file){
     require(parallelDist)
     require(forecast)
     require(foreach)
@@ -31,17 +33,12 @@ knn_optim_parallelf = function(x, k, d, v=1, error_metric="MAE", weight="proximi
                         MAPE = {5}
     )
     
-    # Calculate all the k and d values to be explored. If a number is given, it creates a vector from 1 to k.
-    # Otherwise it will just make sure that the vector is ordered
-    if (length(k) == 1) {
-        k <- 1:k
-    } else if (is.unsorted(k)) {
-        k <- sort(k)
+    # Sort k or d vector if they are unsorted
+    if (is.unsorted(k)) {
+      k <- sort(k)
     }
-    if (length(d) == 1) {
-        d <- 1:d
-    } else if (is.unsorted(d)) {
-        d <- sort(d)
+    if (is.unsorted(d)) {
+      d <- sort(d)
     }
     
     # Initialization of variables to be used
