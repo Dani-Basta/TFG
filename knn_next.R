@@ -35,7 +35,9 @@ knn_next = function(x, k, d, v = 1, distance_metric = "euclidean", weight = "pro
       elements_matrix <- matrix(elements_matrix, nrow = n)
     }
 
-    # Calculate distances between the most recent 'element' and the rest of the 'elements'
+    # Calculate distances between every element, a 'triangular matrix' is returned
+    # Only the first column is used because it corresponds to the distances
+    # between the most recent 'element' and the rest of the 'elements'
     distances <- parDist(elements_matrix, distance_metric, threads = threads)[1:(n - d)]
 
     # Get the indexes of the k nearest neighbors(elements)
