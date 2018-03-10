@@ -44,7 +44,7 @@ knn_next = function(x, k, d, v = 1, distance_metric = "euclidean", weight = "pro
     k_nn <- head((sort.int(distances, index.return = TRUE))$ix, k)
 
     # Calculate the weights for the future computation of the weighted mean
-    weights = switch(weight, proximity = {1/(distances[k_nn] + .Machine$double.xmin)},
+    weights = switch(weight, proximity = {1 / (distances[k_nn] + .Machine$double.xmin)},
                              same = {rep.int(1, k)},
                              trend = {k:1})
 
