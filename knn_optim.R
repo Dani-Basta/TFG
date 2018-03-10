@@ -18,7 +18,6 @@
 #'   \item{trend}{nearest neighbor is assigned with weight k, second closest neighbor with weight k-1, and so on until the
 #'                least nearest neighbor which is assigned with a weight of 1.}
 #' }
-#' @param weight Type of weight to use at the time of the prediction. 3 supported: proximity, same, trend
 #' @return A matrix of errors, optimal K & D
 
 knn_optim = function(x, k, d, v = 1, distance_metric = "euclidean", error_metric = "MAE", weight = "proximity"){
