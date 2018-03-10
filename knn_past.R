@@ -34,6 +34,7 @@ knn_past = function(x, k, d, v = 1, init, distance_metric = "euclidean", weight 
     elements_matrix <- knn_elements(y, d)
 
     # This happens if d=1 and a univariate time series is given, a very unusual case
+    # This transformation is needed so that parDist doesn't throw an error
     if (is(elements_matrix, "numeric")) {
       elements_matrix <- matrix(elements_matrix, nrow = length(curr_elems))
     }
