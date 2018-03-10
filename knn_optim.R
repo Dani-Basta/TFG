@@ -25,7 +25,7 @@ knn_optim = function(x, k, d, v = 1, distance_metric = "euclidean", error_metric
     require(forecast)
 
     # Choose the appropiate index of the accuracy result, depending on the error_metric
-    error_type = switch(error_metric,
+    error_type <- switch(error_metric,
                         ME = {1},
                         RMSE = {2},
                         MAE = {3},
@@ -70,19 +70,18 @@ knn_optim = function(x, k, d, v = 1, distance_metric = "euclidean", error_metric
     init <- floor(n*0.7)
     errors <- matrix(nrow = ks, ncol = ds)
     real_values <- matrix(y[(init + 1):n, v])
-    index <- 1
-    for (i in d) {
 
+    for (i in 1:ds) {
         predictions <- matrix(nrow = ks, ncol = n - init)
-        distances_matrix <- distances_matrixes[[index]]
+        distances_matrix <- distances_matrixes[[i]]
         distances_size <- attr(distances_matrix, "Size")
 
         for (j in 2:(n - init + 1)) {
 
             # Get column needed from the distances matrix and sort it
             initial_index <- distances_size * (j - 1) - j * (j - 1) / 2 + 1
-            distances_col <- distances_matrix[initial_index:(initial_index + n - i - j)]
-            sorted_distances_col <- sort.int(distances_matrix[initial_index:(initial_index + n - i - j)], index.return = TRUE)
+            distances_col <- distances_matrix[initial_index:(initial_index + n - d[i] - j)]
+            sorted_distances_col <- sort.int(distances_col, index.return = TRUE)
 
             for (k_index in 1:ks) {
               k_value <- k[k_index]
@@ -102,11 +101,9 @@ knn_optim = function(x, k, d, v = 1, distance_metric = "euclidean", error_metric
 
         # Calculate error values between the known values and the predicted values, these values go from init to t - 1
         # and for all Ks
-        for (ind in 1:ks) {
-          errors[ind, index] <- accuracy(ts(predictions[ind, ]), real_values)[error_type]
+        for (k_index in 1:ks) {
+          errors[k_index, i] <- accuracy(ts(predictions[k_index, ]), real_values)[error_type]
         }
-
-        index <- index + 1
     }
 
     # Construction of the list to be returned
