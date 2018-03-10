@@ -4,8 +4,20 @@
 #' @param k Values of Ks to be analyzed
 #' @param d Values of Ds to be analyzed
 #' @param v Variable to be predicted if given multivariate time series
-#' @param distance_metric Type of metric to evaluate the distance between points
+#' @param distance_metric Type of metric to evaluate the distance between points. Many metrics are supported: euclidean, manhattan,
+#' dynamic time warping, camberra and others. For more information about the supported metrics check the values that 'method'
+#' argument of function parDist (from parallelDist package) can take as this is the function used to calculate the distances.
+#' Link to the package info: https://cran.r-project.org/web/packages/parallelDist
+#' Some of the values that this argument can take are "euclidean", "manhattan", "dtw", "camberra", "chord".
 #' @param error_metric Type of metric to evaluate the prediction error
+#' @param weight Type of weight to use at the time of calculating the predicted value with a weighted mean.
+#- Three supported: proximity, same, trend.
+#' \describe{
+#'   \item{proximity}{the weight assigned to each neighbor is proportional to its distance}
+#'   \item{same}{all neighbors are assigned with the same weight}
+#'   \item{trend}{nearest neighbor is assigned with weight k, second closest neighbor with weight k-1, and so on until the
+#'                least nearest neighbor which is assigned with a weight of 1.}
+#' }
 #' @param weight Type of weight to use at the time of the prediction. 3 supported: proximity, same, trend
 #' @return A matrix of errors, optimal K & D
 
