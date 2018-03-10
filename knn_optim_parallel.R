@@ -87,7 +87,7 @@ knn_optim_parallel = function(x, k, d, v = 1, distance_metric = "euclidean", err
     clust <- makeCluster(threads)
     registerDoParallel(cl = clust)
 
-all_predictions <- foreach(i = 1:ds, .combine = cbind) %:% foreach(j = (n - init + 1):2, .combine = cbind) %do% {
+all_predictions <- foreach(i = 1:ds, .combine = cbind) %:% foreach(j = (n - init + 1):2, .combine = cbind) %dopar% {
         predictions <- vector(mode = "numeric", ks)
 
         # Get column needed from the distances matrix and sort it
