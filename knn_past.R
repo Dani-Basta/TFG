@@ -1,4 +1,4 @@
-#' Predicts values of the time series using k-nearest neighbors algorithm. The first predicted value
+#' Predict values of the time series using k-nearest neighbors algorithm. The first predicted value
 #' corresponds to instant init + 1 and its determined by the first instants until init, the same is
 #' done for instant init + 2 and so on until the last instant of the time series.
 #'
@@ -54,7 +54,7 @@ knn_past = function(x, k, d, v = 1, init, distance_metric = "euclidean", weight 
         k_nn <- head((sort.int(distances_col, index.return = TRUE))$ix, k)
 
         # Calculate the weights for the future computation of the weighted mean
-        weights = switch(weight, proximity = {1 / (distances_col[k_nn] + .Machine$double.xmin)},
+        weights = switch(weight, proximity = {1 / (distances_col[k_nn] + .Machine$double.xmin * 1e150)},
                          same = {rep.int(1, k)},
                          trend = {k:1})
 
