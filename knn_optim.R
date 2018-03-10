@@ -1,4 +1,4 @@
-#' Optimizes the values of K and D for a given time series
+#' Optimize the values of K and D for a given time series
 #'
 #' @param x A time series
 #' @param k Values of Ks to be analyzed
