@@ -50,10 +50,9 @@ knn_optim = function(x, k, d, v = 1, distance_metric = "euclidean", error_metric
     distances_matrixes <- vector("list", ds)
 
     #Calculate all distances matrixes
-    j <- 1
-    for (i in d) {
+    for (i in 1:ds) {
       # Get elements matrix
-      elements_matrix <- knn_elements(y, i)
+      elements_matrix <- knn_elements(y, d[i])
 
       # This happens if d=1 and a univariate time series is given, a very unusual case
       # This transformation is needed so that parDist doesn't throw an error
@@ -62,9 +61,7 @@ knn_optim = function(x, k, d, v = 1, distance_metric = "euclidean", error_metric
       }
 
       # Calculate distances between every element, a 'triangular matrix' is returned
-      distances_matrixes[[j]] <- parDist(elements_matrix, distance_metric, threads = 1)
-
-      j <- j + 1
+      distances_matrixes[[i]] <- parDist(elements_matrix, distance_metric, threads = 1)
     }
 
     init <- floor(n*0.7)
@@ -77,7 +74,6 @@ knn_optim = function(x, k, d, v = 1, distance_metric = "euclidean", error_metric
         distances_matrix_size <- attr(distances_matrix, "Size")
 
         for (j in (n - init + 1):2) {
-
             # Get column needed from the distances matrix and sort it
             initial_index <- distances_matrix_size * (j - 1) - j * (j - 1) / 2 + 1
             distances_col <- distances_matrix[initial_index:(initial_index + n - d[i] - j)]
