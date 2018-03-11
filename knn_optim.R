@@ -74,12 +74,12 @@ knn_optim = function(x, k, d, v = 1, distance_metric = "euclidean", error_metric
     for (i in 1:ds) {
         predictions <- matrix(nrow = ks, ncol = n - init)
         distances_matrix <- distances_matrixes[[i]]
-        distances_size <- attr(distances_matrix, "Size")
+        distances_matrix_size <- attr(distances_matrix, "Size")
 
-        for (j in 2:(n - init + 1)) {
+        for (j in (n - init + 1):2) {
 
             # Get column needed from the distances matrix and sort it
-            initial_index <- distances_size * (j - 1) - j * (j - 1) / 2 + 1
+            initial_index <- distances_matrix_size * (j - 1) - j * (j - 1) / 2 + 1
             distances_col <- distances_matrix[initial_index:(initial_index + n - d[i] - j)]
             sorted_distances_col <- sort.int(distances_col, index.return = TRUE)
 
