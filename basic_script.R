@@ -4,26 +4,35 @@
 #Load to Enviroment "knn_optim", "knn_past" and "knn_elements". Also load packages "plotly" and "shiny"
 
 x <- sunspot.month
-res <- knn_optim(x = x, k = 1:50, d = 1:30)
-EucPro <- knn_past(x = x, k = res$k, d = res$d, init = 2224, weight = "proximity", threads = 3)
-EucTre <- knn_past(x = x, k = res$k, d = res$d, init = 2224, weight = "trend", threads = 3)
-EucSame <- knn_past(x = x, k = res$k, d = res$d, init = 2224, weight = "same", threads = 3)
+init <- floor(NROW(x)*0.7)
+distance <- "euclidean"
+error_metric <-  "MAE"
+weight <- "proximity"
+nThreads <- 3
 
-subX <- x[2225:3177]
+res <- knn_optim(x = x, k = 1:50, d = 1:30, init  = init, distance_metric = distance, error_metric = error_metric, weight = weight)
+
+EucPro <- knn_past(x = x, k = res$k, d = res$d, init = init, distance_metric = distance, weight = "proximity", threads = nThreads)
+EucTre <- knn_past(x = x, k = res$k, d = res$d, init = init, distance_metric = distance, weight = "trend", threads = nThreads)
+EucSame <- knn_past(x = x, k = res$k, d = res$d, init = init, distance_metric = distance, weight = "same", threads = nThreads)
+
+subX <- x[(init+1):NROW(x)]
 
 library(plotly)
 library(shiny)
 
-p1 <- plot_ly(x = 1:953, type = "scatter", y = subX[1:953], name = "Original", mode = "lines")
-p1 <- add_trace(p1, y = EucPro[1:953], name = "Proximity", mode = "lines") 
-p1 <- add_trace(p1, y = EucTre[1:953], name = "Trend", mode = "lines") 
-p1 <- add_trace(p1, y = EucSame[1:953], name = "Same", mode = "lines")
+plotMode <- "lines"
+
+p1 <- plot_ly(x = 1:NROW(xubX), type = "scatter", y = subX, name = "Real", mode = plotMode)
+p1 <- add_trace(p1, y = EucPro, name = "Proximity", mode = plotMode) 
+p1 <- add_trace(p1, y = EucTre, name = "Trend", mode = plotMode) 
+p1 <- add_trace(p1, y = EucSame, name = "Same", mode = plotMode)
 p1 <- layout(p1, title = "Prediccion normal", xaxis = list(rangeslider = list(type = "date")))
 
-p2 <- plot_ly(x = 1:952, type = "scatter", y = subX[1:952], name = "Original", mode = "lines")
-p2 <- add_trace(p2, y = EucPro[2:953], name = "Proximity", mode = "lines") 
-p2 <- add_trace(p2, y = EucTre[2:953], name = "Trend", mode = "lines") 
-p2 <- add_trace(p2, y = EucSame[2:953], name = "Same", mode = "lines")
+p2 <- plot_ly(x = 1:(NROW(subX)-1), type = "scatter", y = subX[1:(NROW(subX)-1)], name = "Real", mode = plotMode)
+p2 <- add_trace(p2, y = EucPro[2:NROW(EucPro)], name = "Proximity", mode = plotMode) 
+p2 <- add_trace(p2, y = EucTre[2:NROW(EucTre)], name = "Trend", mode = plotMode) 
+p2 <- add_trace(p2, y = EucSame[2:NROW(EucSame)], name = "Same", mode = plotMode)
 p2 <- layout(p2, title = "Prediccion desplazada")
 
 pO <- plot_ly(z = res$errors, type = "contour", autocontour = TRUE, contours = list(showlabels = TRUE, coloring = "heatmap") )
