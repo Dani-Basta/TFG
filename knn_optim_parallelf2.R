@@ -17,7 +17,7 @@
 #' @param file Name or id of the files where the distances matrixes are saved
 #' @return A matrix of errors, optimal K & D
 
-knn_optim_parallelf2 = function(x, k, d, v = 1, error_metric = "MAE", weight = "proximity", threads = 3, file, rows){
+knn_optim_parallelf2 = function(x, k, d, v = 1, init, error_metric = "MAE", weight = "proximity", threads = 3, file, rows){
   require(parallelDist)
   require(forecast)
   require(foreach)
