@@ -10,4 +10,4 @@ Depends: R (>= 3.1.0), rdist
 Description: Two main functionalities are provided. One of them is predicting values of a time series with 
 k-nearest neighbors algorithm and the other one is calibrating the parameters of the algorithm according to 
 a time series.
-License: --------
+License: AGPL-3
