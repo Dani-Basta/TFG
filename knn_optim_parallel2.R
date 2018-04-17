@@ -21,7 +21,7 @@
 #' @param threads Number of threads to be used when parallelizing
 #' @return A matrix of errors, optimal K & D
 
-knn_optim_parallel2 = function(x, k, d, v = 1, distance_metric = "euclidean", error_metric = "MAE", weight = "proximity", threads = 3){
+knn_optim_parallel2 = function(x, k, d, v = 1, init, distance_metric = "euclidean", error_metric = "MAE", weight = "proximity", threads = 3){
   require(parallelDist)
   require(forecast)
   require(foreach)
@@ -83,7 +83,6 @@ knn_optim_parallel2 = function(x, k, d, v = 1, distance_metric = "euclidean", er
   # Finally when we have all the predictions we calculate the error for each prediction and store them
   # in the variable of the foreach loop.
 
-  init <- floor(n * 0.7)
   real_values <- matrix(y[(init + 1):n, v])
   clust <- makeCluster(threads)
   registerDoParallel(cl = clust)
