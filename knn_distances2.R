@@ -23,7 +23,7 @@ knn_distances2 = function(x, d, distance_metric = "euclidean", threads = 3, file
   #Calculate and save all distances matrixes
   for (act_d in d) {
     # Get elements matrix
-    elements_matrix <- knn_elements2(y, act_d)
+    elements_matrix <- knn_elements(y, act_d)
 
     # Calculate distances between the last 'element' and each of the others 'elements'
     # This happens if d=1 and a univariate time series is given, a very unusual case
