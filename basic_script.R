@@ -23,7 +23,7 @@ library(shiny)
 
 plotMode <- "lines"
 
-p1 <- plot_ly(x = 1:NROW(xubX), type = "scatter", y = subX, name = "Real", mode = plotMode)
+p1 <- plot_ly(x = 1:NROW(subX), type = "scatter", y = subX, name = "Real", mode = plotMode)
 p1 <- add_trace(p1, y = EucPro, name = "Proximity", mode = plotMode) 
 p1 <- add_trace(p1, y = EucTre, name = "Trend", mode = plotMode) 
 p1 <- add_trace(p1, y = EucSame, name = "Same", mode = plotMode)
