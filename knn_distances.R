@@ -9,30 +9,33 @@
 #' Some of the values that this argument can take are "euclidean", "manhattan", "dtw", "camberra", "chord".
 #' @param threads Number of threads to be used when parallelizing
 #' @param file Name or id of the files where the distances matrixes will be saved
-knn_distances = function(x, d, distance_metric = "euclidean", threads = 3, file){
-    require(parallelDist)
+knn_distances = function(x, d, distance_metric = "euclidean", threads = NULL, file){
+  require(parallelDist)
+  require(parallel)
 
-    # Initialization of variables to be used
-    y <- matrix(x, ncol = NCOL(x))
-    n <- NROW(y)
+  threads <- ifelse(is.null(threads), parallel::detectCores() - 1, threads)
 
-    # In order to parallelize we calculate the distances matrix just once for each d, as the distance variates
-    # with the number of values that characterize each element
+  # Initialization of variables to be used
+  y <- matrix(x, ncol = NCOL(x))
+  n <- NROW(y)
 
-    #Calculate and save all distances matrixes
-    for (act_d in d) {
-        # Get elements matrix
-        elements_matrix <- knn_elements(y, act_d)
+  # In order to parallelize we calculate the distances matrix just once for each d, as the distance variates
+  # with the number of values that characterize each element
 
-        # Calculate distances between the last 'element' and each of the others 'elements'
-        # This happens if d=1 and a univariate time series is given, a very unusual case
-        if (is(elements_matrix, "numeric")) {
-            elements_matrix <- matrix(elements_matrix, nrow = length(curr_elems))
-        }
-        distances_new_element <- parDist(elements_matrix, distance_metric, threads = threads)
+  #Calculate and save all distances matrixes
+  for (act_d in d) {
+      # Get elements matrix
+      elements_matrix <- knn_elements(y, act_d)
 
-        # Save distances matrix in file
-        saveRDS(distances_new_element, paste0(file, "-", act_d))
-    }
+      # Calculate distances between the last 'element' and each of the others 'elements'
+      # This happens if d=1 and a univariate time series is given, a very unusual case
+      if (is(elements_matrix, "numeric")) {
+          elements_matrix <- matrix(elements_matrix, nrow = length(curr_elems))
+      }
+      distances_new_element <- parDist(elements_matrix, distance_metric, threads = threads)
+
+      # Save distances matrix in file
+      saveRDS(distances_new_element, paste0(file, "-", act_d))
+  }
 
 }

@@ -20,7 +20,7 @@
 #' }
 #' @return A matrix of errors, optimal K & D
 
-knn_optim = function(x, k, d, v = 1, init, distance_metric = "euclidean", error_metric = "MAE", weight = "proximity"){
+knn_optim = function(x, k, d, v = 1, init = NULL, distance_metric = "euclidean", error_metric = "MAE", weight = "proximity"){
     require(parallelDist)
     require(forecast)
 
@@ -47,6 +47,9 @@ knn_optim = function(x, k, d, v = 1, init, distance_metric = "euclidean", error_
     m <- NCOL(y)
     ks <- length(k)
     ds <- length(d)
+    init <- ifelse(is.null(init), init <- floor(n * 0.7), init)
+    real_values <- matrix(y[(init + 1):n, v])
+    errors <- matrix(nrow = ks, ncol = ds)
     distances_matrixes <- vector("list", ds)
 
     #Calculate all distances matrixes
@@ -63,9 +66,6 @@ knn_optim = function(x, k, d, v = 1, init, distance_metric = "euclidean", error_
       # Calculate distances between every element, a 'triangular matrix' is returned
       distances_matrixes[[i]] <- parDist(elements_matrix, distance_metric, threads = 1)
     }
-
-    errors <- matrix(nrow = ks, ncol = ds)
-    real_values <- matrix(y[(init + 1):n, v])
 
     for (i in 1:ds) {
         predictions <- matrix(nrow = ks, ncol = n - init)

@@ -21,14 +21,14 @@
 #' @param threads Number of threads to be used when parallelizing
 #' @return A matrix of errors, optimal K & D
 
-knn_optim_parallel = function(x, k, d, v = 1, init, distance_metric = "euclidean", error_metric = "MAE", weight = "proximity", threads = 0){
+knn_optim_parallel = function(x, k, d, v = 1, init = NULL, distance_metric = "euclidean", error_metric = "MAE", weight = "proximity", threads = NULL){
     require(parallelDist)
     require(forecast)
     require(foreach)
     require(doParallel)
     require(iterators)
 
-    threads <- ifelse(threads == 0, parallel::detectCores() - 1, threads)
+    threads <- ifelse(is.null(threads), parallel::detectCores() - 1, threads)
 
     # Choose the appropiate index of the accuracy result, depending on the error_metric
     error_type <- switch(error_metric,
@@ -53,6 +53,9 @@ knn_optim_parallel = function(x, k, d, v = 1, init, distance_metric = "euclidean
     m <- NCOL(y)
     ks <- length(k)
     ds <- length(d)
+    init <- ifelse(is.null(init), init <- floor(n * 0.7), init)
+    real_values <- matrix(y[(init + 1):n, v])
+    errors <- matrix(nrow = ks, ncol = ds)
     distances_matrixes <- vector("list", ds)
     distances_matrixes_sizes <- vector(mode = "numeric", ds)
 
@@ -118,8 +121,6 @@ all_predictions <- foreach(i = 1:ds, .combine = cbind) %:% foreach(j = (n - init
 
     # Calculate error values between the known values and the predicted values, these values go from init to t - 1
     # and for all Ks
-    errors <- matrix(nrow = ks, ncol = ds)
-    real_values <- matrix(y[(init + 1):n, v])
     for (i in 1:ds) {
         initial_index <- (i - 1) * (n - init) + 1
         for (k_index in 1:ks) {

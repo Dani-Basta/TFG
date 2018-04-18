@@ -10,8 +10,11 @@
 #' @param threads Number of threads to be used when parallelizing
 #' @param rows Number of rows per file
 #' @param file Name or id of the files where the distances matrixes will be saved
-knn_distances2 = function(x, d, distance_metric = "euclidean", threads = 3, file, rows = 1){
+knn_distances2 = function(x, d, distance_metric = "euclidean", threads = NULL, file, rows = 1){
   require(parallelDist)
+  require(parallel)
+
+  threads <- ifelse(is.null(threads), parallel::detectCores() - 1, threads)
 
   # Initialization of variables to be used
   y <- matrix(x, ncol = NCOL(x))

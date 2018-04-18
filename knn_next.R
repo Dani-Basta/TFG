@@ -20,36 +20,40 @@
 #' @param threads Number of threads to be used when parallelizing distances calculation
 #' @return The predicted value
 
-knn_next = function(x, k, d, v = 1, distance_metric = "euclidean", weight = "proximity", threads = 1) {
-    require(parallelDist)
-    y <- matrix(x, ncol = NCOL(x))
-    n <- NROW(y)
-    m <- NCOL(y)
+knn_next = function(x, k, d, v = 1, distance_metric = "euclidean", weight = "proximity", threads = NULL) {
+  require(parallelDist)
+  require(parallel)
 
-    # Get 'elements' matrix
-    elements_matrix <- knn_elements(y, d)
+  threads <- ifelse(is.null(threads), parallel::detectCores() - 1, threads)
 
-    # This happens if d=1 and a univariate time series is given, a very unusual case
-    # This transformation is needed so that parDist doesn't throw an error
-    if (is(elements_matrix, "numeric")) {
-      elements_matrix <- matrix(elements_matrix, nrow = n)
-    }
+  y <- matrix(x, ncol = NCOL(x))
+  n <- NROW(y)
+  m <- NCOL(y)
 
-    # Calculate distances between every element, a 'triangular matrix' is returned
-    # Only the first column is used because it corresponds to the distances
-    # between the most recent 'element' and the rest of the 'elements'
-    distances <- parDist(elements_matrix, distance_metric, threads = threads)[1:(n - d)]
+  # Get 'elements' matrix
+  elements_matrix <- knn_elements(y, d)
 
-    # Get the indexes of the k nearest neighbors(elements)
-    k_nn <- head((sort.int(distances, index.return = TRUE))$ix, k)
+  # This happens if d=1 and a univariate time series is given, a very unusual case
+  # This transformation is needed so that parDist doesn't throw an error
+  if (is(elements_matrix, "numeric")) {
+    elements_matrix <- matrix(elements_matrix, nrow = n)
+  }
 
-    # Calculate the weights for the future computation of the weighted mean
-    weights = switch(weight, proximity = {1 / (distances[k_nn] + .Machine$double.xmin * 1e150)},
-                             same = {rep.int(1, k)},
-                             trend = {k:1})
+  # Calculate distances between every element, a 'triangular matrix' is returned
+  # Only the first column is used because it corresponds to the distances
+  # between the most recent 'element' and the rest of the 'elements'
+  distances <- parDist(elements_matrix, distance_metric, threads = threads)[1:(n - d)]
 
-    # Calculate the predicted value
-    prediction <- weighted.mean(y[n - k_nn + 1, v], weights)
+  # Get the indexes of the k nearest neighbors(elements)
+  k_nn <- head((sort.int(distances, index.return = TRUE))$ix, k)
 
-    prediction
+  # Calculate the weights for the future computation of the weighted mean
+  weights = switch(weight, proximity = {1 / (distances[k_nn] + .Machine$double.xmin * 1e150)},
+                           same = {rep.int(1, k)},
+                           trend = {k:1})
+
+  # Calculate the predicted value
+  prediction <- weighted.mean(y[n - k_nn + 1, v], weights)
+
+  prediction
 }
