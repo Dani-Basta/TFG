@@ -17,7 +17,7 @@
 #' @param file Name or id of the files where the distances matrixes are saved
 #' @return A matrix of errors, optimal K & D
 
-knn_optim_parallelf2 = function(x, k, d, init = NULL, v = 1, error_metric = "MAE", weight = "proximity", threads = NULL, file, rows){
+knn_optim_parallelf2 = function(x, k, d, v = 1, init = NULL, error_metric = "MAE", weight = "proximity", threads = NULL, file, rows){
   require(parallelDist)
   require(forecast)
   require(foreach)
@@ -49,8 +49,8 @@ knn_optim_parallelf2 = function(x, k, d, init = NULL, v = 1, error_metric = "MAE
   m <- NCOL(y)
   ks <- length(k)
   ds <- length(d)
-  init <- ifelse(is.null(init), init <- floor(n * 0.7), init)
-  real_values <- matrix(y[(init + 1):n, v])
+  init <- ifelse(is.null(init), floor(n * 0.7), init)
+  real_values <- matrix(rev(y[(init + 1):n, v]))
   errors <- matrix(nrow = ks, ncol = ds)
 
   # Once we have all distances matrixes we proceed to evaluate in parallel with a different combination
@@ -92,8 +92,6 @@ knn_optim_parallelf2 = function(x, k, d, init = NULL, v = 1, error_metric = "MAE
       distances_col <- distances_matrix[initial_index:(initial_index + distances_matrix_size - j_in_file - 1)]
       sorted_distances_col <- sort.int(distances_col, index.return = TRUE)
 
-      print(sorted_distances_col$x)
-
       for (k_index in 1:ks) {
         k_value <- k[k_index]
 
@@ -106,9 +104,6 @@ knn_optim_parallelf2 = function(x, k, d, init = NULL, v = 1, error_metric = "MAE
                           same = {rep.int(1, k_value)},
                           trend = {k_value:1})
 
-        # print(k_nn)
-        # print(y[n - (num_of_file - 1) * 3 - j_in_file + 2 - k_nn, v])
-        # print(weighted.mean(y[n - (num_of_file - 1) * rows - j_in_file + 2 - k_nn, v], weights))
         #Calculate the predicted value
         if (num_of_file == 1 && rows > 1) {
           predictions[k_index, j_in_file - 1] <- weighted.mean(y[n - (num_of_file - 1) * rows - j_in_file + 2 - k_nn, v], weights)
@@ -117,7 +112,7 @@ knn_optim_parallelf2 = function(x, k, d, init = NULL, v = 1, error_metric = "MAE
           predictions[k_index, j_in_file] <- weighted.mean(y[n - (num_of_file - 1) * rows - j_in_file + 2 - k_nn, v], weights)
 
         }
-        # print(predictions)
+        
       }
     }
 
@@ -132,7 +127,7 @@ knn_optim_parallelf2 = function(x, k, d, init = NULL, v = 1, error_metric = "MAE
   for (i in 1:ds) {
     initial_index <- (i - 1) * (n - init) + 1
     for (k_index in 1:ks) {
-      errors[k_index, i] <- accuracy(ts(all_predictions[k_index, initial_index:(initial_index + n - init - 1)]), rev(real_values))[error_type]
+      errors[k_index, i] <- accuracy(ts(all_predictions[k_index, initial_index:(initial_index + n - init - 1)]), real_values)[error_type]
     }
   }
 
