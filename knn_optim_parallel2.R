@@ -53,7 +53,7 @@ knn_optim_parallel2 = function(x, k, d, v = 1, init = NULL, distance_metric = "e
   m <- NCOL(y)
   ks <- length(k)
   ds <- length(d)
-  init <- ifelse(is.null(init), init <- floor(n * 0.7), init)
+  init <- ifelse(is.null(init), floor(n * 0.7), init)
   real_values <- matrix(y[(init + 1):n, v])
   distances_matrixes <- vector("list", ds)
   distances_matrixes_sizes <- vector(mode = "numeric", ds)
