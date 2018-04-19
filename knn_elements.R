@@ -13,11 +13,11 @@ knn_elements = function(y, d) {
 
   # Fill matrix in a way in which every row has an 'element'
   elements_matrix <- matrix(nrow = last_elem + 1, ncol = d * m)
-  col <- 1
+  col <- NCOL(elements_matrix)
   for (i in 1:m) {
     for (j in 1:d) {
       elements_matrix[, col] <- rev(y[(j:(j + last_elem)), i])
-      col <- col + 1
+      col <- col - 1
     }
   }
 
