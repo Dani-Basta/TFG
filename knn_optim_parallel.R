@@ -55,7 +55,7 @@ knn_optim_parallel = function(x, k, d, v = 1, init = NULL, distance_metric = "eu
     ds <- length(d)
     init <- ifelse(is.null(init), floor(n * 0.7), init)
     real_values <- matrix(y[(init + 1):n, v])
-    errors <- matrix(nrow = ks, ncol = ds)
+    errors <- matrix(nrow = ks, ncol = ds, dimnames = list(k, d))
     distances_matrixes <- vector("list", ds)
     distances_matrixes_sizes <- vector(mode = "numeric", ds)
 

@@ -51,7 +51,7 @@ knn_optim_parallelf2 = function(x, k, d, v = 1, init = NULL, error_metric = "MAE
   ds <- length(d)
   init <- ifelse(is.null(init), floor(n * 0.7), init)
   real_values <- matrix(rev(y[(init + 1):n, v]))
-  errors <- matrix(nrow = ks, ncol = ds)
+  errors <- matrix(nrow = ks, ncol = ds, dimnames = list(k, d))
 
   # Once we have all distances matrixes we proceed to evaluate in parallel with a different combination
   # of d and row.
@@ -112,7 +112,7 @@ knn_optim_parallelf2 = function(x, k, d, v = 1, init = NULL, error_metric = "MAE
           predictions[k_index, j_in_file] <- weighted.mean(y[n - (num_of_file - 1) * rows - j_in_file + 2 - k_nn, v], weights)
 
         }
-        
+
       }
     }
 

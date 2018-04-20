@@ -52,7 +52,7 @@ knn_optim_parallelf = function(x, k, d, v = 1, init = NULL, error_metric = "MAE"
   ds <- length(d)
   init <- ifelse(is.null(init), floor(n * 0.7), init)
   real_values <- matrix(y[(init + 1):n, v])
-  errors <- matrix(nrow = ks, ncol = ds)
+  errors <- matrix(nrow = ks, ncol = ds, dimnames = list(k, d))
 
   # Once we have all distances matrixes we proceed to evaluate in parallel with a different combination
   # of d and row.

@@ -132,6 +132,7 @@ knn_optim_parallel2 = function(x, k, d, v = 1, init = NULL, distance_metric = "e
   index_min_error <- which.min(errors_matrix)
   optK <- k[((index_min_error - 1) %% ks) + 1]
   optD <- d[ceiling(index_min_error / ks)]
+  dimnames(errors_matrix) <- list(k, d)
   result <- list(errors = errors_matrix, k = optK, d = optD)
 
   result
