@@ -1,7 +1,7 @@
 #' Create a matrix to be used for calculating distances. The most
 #' recent 'element' is put in the first row of the matrix, the
 #' second most recent 'element' in the second row and so on. Therefore,
-#' the oldest 'element' is put int the last row.
+#' the oldest 'element' is put in the last row.
 #'
 #' @param y A matrix
 #' @param d Length of each of the 'elements'
