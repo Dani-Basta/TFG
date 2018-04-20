@@ -2,7 +2,7 @@
 #'
 #' @param x A time series
 #' @param k Number of neighbors
-#' @param d Length of each of the elements
+#' @param d Length of each of the 'elements'
 #' @param v Variable to be predicted if given multivariate time series
 #' @param distance_metric Type of metric to evaluate the distance between points. Many metrics are supported: euclidean, manhattan,
 #' dynamic time warping, camberra and others. For more information about the supported metrics check the values that 'method'
@@ -17,7 +17,7 @@
 #'   \item{trend}{nearest neighbor is assigned with weight k, second closest neighbor with weight k-1, and so on until the
 #'                least nearest neighbor which is assigned with a weight of 1.}
 #' }
-#' @param threads Number of threads to be used when parallelizing distances calculation
+#' @param threads Number of threads to be used when parallelizing distances calculation, default is number of cores detected - 1.
 #' @return The predicted value
 
 knn_next = function(x, k, d, v = 1, distance_metric = "euclidean", weight = "proximity", threads = NULL) {
