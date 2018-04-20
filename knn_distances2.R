@@ -8,9 +8,9 @@
 #' Link to the package info: https://cran.r-project.org/web/packages/parallelDist
 #' Some of the values that this argument can take are "euclidean", "manhattan", "dtw", "camberra", "chord".
 #' @param threads Number of threads to be used when parallelizing
-#' @param rows Number of rows per file
+#' @param cols Number of columns per file
 #' @param file Name or id of the files where the distances matrixes will be saved
-knn_distances2 = function(x, d, distance_metric = "euclidean", threads = NULL, file, rows = 1){
+knn_distances2 = function(x, d, distance_metric = "euclidean", threads = NULL, file, cols = 1){
   require(parallelDist)
   require(parallel)
 
@@ -43,7 +43,7 @@ knn_distances2 = function(x, d, distance_metric = "euclidean", threads = NULL, f
     while (i <= distances_length) {
       initial_i <- i
       j <- 1
-      while (j <= rows && i <= distances_length) {
+      while (j <= cols && i <= distances_length) {
         i <- i + act_column_length
         act_column_length <-  act_column_length - 1
         j <- j + 1
