@@ -1,6 +1,7 @@
 #' Create a matrix to be used for calculating distances. The most
 #' recent 'element' is put in the first row of the matrix, the
-#' second most recent 'element' in the second row and so on.
+#' second most recent 'element' in the second row and so on. Therefore,
+#' the oldest 'element' is put int the last row.
 #'
 #' @param y A matrix
 #' @param d Length of each of the 'elements'
@@ -11,7 +12,7 @@ knn_elements = function(y, d) {
   m <- NCOL(y)
   last_elem <- n - d
 
-  # Fill matrix in a way in which every row has an 'element'
+  # Fill matrix as described above
   elements_matrix <- matrix(nrow = last_elem + 1, ncol = d * m)
   col <- NCOL(elements_matrix)
   for (i in 1:m) {
