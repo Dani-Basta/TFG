@@ -64,50 +64,50 @@ knn_optim_parallelf = function(x, k, d, v = 1, init = NULL, error_metric = "MAE"
   clust <- makeCluster(threads)
   registerDoParallel(cl = clust)
 
-    all_predictions <- foreach(i = 1:ds, .combine = cbind) %:% foreach(j = (n - init + 1):2, .combine = cbind) %dopar% {
-        predictions <- vector(mode = "numeric", ks)
+  all_predictions <- foreach(i = 1:ds, .combine = cbind) %:% foreach(j = (n - init + 1):2, .combine = cbind) %dopar% {
+      predictions <- vector(mode = "numeric", ks)
 
-        # Get column needed from the distances matrix and sort it
-        initial_index <- (n - d[i] + 1) * (j - 1) - j * (j - 1) / 2 + 1
-        distances_col <- readRDS(paste0(file, "-", d[i]))[initial_index:(initial_index + n - d[i] - j)]
-        sorted_distances_col <- sort.int(distances_col, index.return = TRUE)
+      # Get column needed from the distances matrix and sort it
+      initial_index <- (n - d[i] + 1) * (j - 1) - j * (j - 1) / 2 + 1
+      distances_col <- readRDS(paste0(file, "-", d[i]))[initial_index:(initial_index + n - d[i] - j)]
+      sorted_distances_col <- sort.int(distances_col, index.return = TRUE)
 
-        for (k_index in 1:ks) {
-            k_value <- k[k_index]
+      for (k_index in 1:ks) {
+          k_value <- k[k_index]
 
-            # Get the indexes k nearest neighbors(elements)
-            k_nn <- head(sorted_distances_col$ix, k_value)
+          # Get the indexes k nearest neighbors(elements)
+          k_nn <- head(sorted_distances_col$ix, k_value)
 
-            # Calculate the weights for the future computation of the weighted mean
-            weights <- switch(weight,
-                              proximity = {1 / (distances_col[k_nn] + .Machine$double.xmin * 1e150)},
-                              same = {rep.int(1, k_value)},
-                              trend = {k_value:1})
+          # Calculate the weights for the future computation of the weighted mean
+          weights <- switch(weight,
+                            proximity = {1 / (distances_col[k_nn] + .Machine$double.xmin * 1e150)},
+                            same = {rep.int(1, k_value)},
+                            trend = {k_value:1})
 
-            # Calculate the predicted value
-            predictions[k_index] <- weighted.mean(y[n - j + 2 - k_nn, v], weights)
-        }
+          # Calculate the predicted value
+          predictions[k_index] <- weighted.mean(y[n - j + 2 - k_nn, v], weights)
+      }
 
-        predictions
-    }
+      predictions
+  }
 
-    registerDoSEQ()
-    stopCluster(clust)
+  registerDoSEQ()
+  stopCluster(clust)
 
-    # Calculate error values between the known values and the predicted values, these values go from init to t - 1
-    # and for all Ks
-    for (i in 1:ds) {
-        initial_index <- (i - 1) * (n - init) + 1
-        for (k_index in 1:ks) {
-            errors[k_index, i] <- accuracy(ts(all_predictions[k_index, initial_index:(initial_index + n - init - 1)]), real_values)[error_type]
-        }
-    }
+  # Calculate error values between the known values and the predicted values, these values go from init to t - 1
+  # and for all Ks
+  for (i in 1:ds) {
+      initial_index <- (i - 1) * (n - init) + 1
+      for (k_index in 1:ks) {
+          errors[k_index, i] <- accuracy(ts(all_predictions[k_index, initial_index:(initial_index + n - init - 1)]), real_values)[error_type]
+      }
+  }
 
-    # Construction of the list to be returned
-    index_min_error <- which.min(errors)
-    optK <- k[((index_min_error - 1) %% ks) + 1]
-    optD <- d[ceiling(index_min_error / ks)]
-    result <- list(errors = errors, k = optK, d = optD)
+  # Construction of the list to be returned
+  index_min_error <- which.min(errors)
+  optK <- k[((index_min_error - 1) %% ks) + 1]
+  optD <- d[ceiling(index_min_error / ks)]
+  result <- list(errors = errors, k = optK, d = optD)
 
-    return(result)
+  result
 }

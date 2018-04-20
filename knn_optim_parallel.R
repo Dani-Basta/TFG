@@ -134,5 +134,5 @@ all_predictions <- foreach(i = 1:ds, .combine = cbind) %:% foreach(j = (n - init
     optD <- d[ceiling(index_min_error / ks)]
     result <- list(errors = errors, k = optK, d = optD)
 
-    return(result)
+    result
 }

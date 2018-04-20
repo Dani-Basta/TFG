@@ -137,5 +137,5 @@ knn_optim_parallelf2 = function(x, k, d, v = 1, init = NULL, error_metric = "MAE
   optD <- d[ceiling(index_min_error / ks)]
   result <- list(errors = errors, k = optK, d = optD)
 
-  return(result)
+  result
 }

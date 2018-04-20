@@ -113,8 +113,8 @@ knn_optim_parallel2 = function(x, k, d, v = 1, init = NULL, distance_metric = "e
 
         # Calculate the predicted value
         predictions[k_index, n - init + 2 - j] <- weighted.mean(y[n - j + 2 - k_nn, v], weights)
-        }
-  }
+      }
+    }
 
     # Calculate error values between the known values and the predicted values, these values go from init to t - 1
     # and for all Ks
