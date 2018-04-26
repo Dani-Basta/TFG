@@ -1,25 +1,42 @@
-#' Optimize the values of K and D for a given time series
+#' Optimizes the values of K and D for a given time series. First, values corresponding to instants from init + 1 to the last one
+#' are predicted. The first value predicted, which corresponds to instant init + 1, is calculated using instants from 1 to
+#' instant init; the second value predicted, which corresponds to instant init + 2, is predicted using instants from 1
+#' to instant init + 1; and so on until the last value, which corresponds to instant n (length of the given time series),
+#' is predicted using instants from 1 to instant n - 1. Finally, the error is evaluated between the predicted values and
+#' the real values of the series.
+#' This version of the optimization function uses a parallelized distances calculation function, and the computation of
+#' the predicted values is done parallelizing by the number of Ds.
 #'
-#' @param x A time series
-#' @param k Values of Ks to be analyzed
-#' @param d Values of Ds to be analyzed
-#' @param v Variable to be predicted
+#' @param x A time series.
+#' @param k Values of Ks to be analyzed.
+#' @param d Values of Ds to be analyzed.
+#' @param v Variable to be predicted if given multivariate time series.
+#' @param init Variable that determines the limit of the known past for the first instant predicted.
 #' @param distance_metric Type of metric to evaluate the distance between points. Many metrics are supported: euclidean, manhattan,
 #' dynamic time warping, camberra and others. For more information about the supported metrics check the values that 'method'
 #' argument of function parDist (from parallelDist package) can take as this is the function used to calculate the distances.
 #' Link to the package info: https://cran.r-project.org/web/packages/parallelDist
 #' Some of the values that this argument can take are "euclidean", "manhattan", "dtw", "camberra", "chord".
-#' @param error_metric Type of metric to evaluate the prediction error
-#' @param weight Type of weight to use at the time of calculating the predicted value with a weighted mean.
-#- Three supported: proximity, same, trend.
+#' @param error_metric Type of metric to evaluate the prediction error.
+#' Five metrics supported:
+#' \describe{
+#'   \item{ME}{Mean Error}
+#'   \item{RMSE}{Root Mean Squared Error}
+#'   \item{MAE}{Mean Absolute Error}
+#'   \item{MPE}{Mean Percentage Error}
+#'   \item{MAPE}{Mean Absolute Percentage Error}
+#' }
+#' @param weight Type of weight to be used at the time of calculating the predicted value with a weighted mean.
+#' Three supported: proximity, same, trend.
 #' \describe{
 #'   \item{proximity}{the weight assigned to each neighbor is proportional to its distance}
 #'   \item{same}{all neighbors are assigned with the same weight}
 #'   \item{trend}{nearest neighbor is assigned with weight k, second closest neighbor with weight k-1, and so on until the
 #'                least nearest neighbor which is assigned with a weight of 1.}
 #' }
-#' @param threads Number of threads to be used when parallelizing
-#' @return A matrix of errors, optimal K & D
+#' @param threads Number of threads to be used when parallelizing, default is number of cores detected - 1 or
+#' 1 if there is only one core.
+#' @return A matrix of errors, optimal K & D.
 
 knn_optim_parallel2 = function(x, k, d, v = 1, init = NULL, distance_metric = "euclidean", error_metric = "MAE", weight = "proximity", threads = NULL){
   require(parallelDist)
@@ -28,7 +45,11 @@ knn_optim_parallel2 = function(x, k, d, v = 1, init = NULL, distance_metric = "e
   require(doParallel)
   require(iterators)
 
-  threads <- ifelse(is.null(threads), parallel::detectCores() - 1, threads)
+  # Default number of threads to be used
+  if (is.null(threads)) {
+    cores <- parallel::detectCores()
+    threads <- ifelse(cores == 1, cores, cores - 1)
+  }
 
   # Choose the appropiate index of the accuracy result, depending on the error_metric
   error_type <- switch(error_metric,

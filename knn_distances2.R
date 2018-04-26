@@ -1,20 +1,27 @@
-#' Calculate one distances matrix per each D for the given time series
+#' Calculates one distances matrix per each D for the given time series and then save them in files. Each file will
+#' contain a maximum of 'cols' number of columns from the corresponding distances matrix.
 #'
-#' @param x A time series
-#' @param d Values of Ds to be analyzed
+#' @param x A time series.
+#' @param d Values of Ds to be analyzed.
 #' @param distance_metric Type of metric to evaluate the distance between points. Many metrics are supported: euclidean, manhattan,
 #' dynamic time warping, camberra and others. For more information about the supported metrics check the values that 'method'
 #' argument of function parDist (from parallelDist package) can take as this is the function used to calculate the distances.
 #' Link to the package info: https://cran.r-project.org/web/packages/parallelDist
 #' Some of the values that this argument can take are "euclidean", "manhattan", "dtw", "camberra", "chord".
-#' @param threads Number of threads to be used when parallelizing
-#' @param cols Number of columns per file
-#' @param file Name or id of the files where the distances matrixes will be saved
+#' @param threads Number of threads to be used when parallelizing distances calculation, default is number of cores detected - 1 or
+#' 1 if there is only one core.
+#' @param file Path and id of the files where the distances matrixes will be saved.
+#' @param cols Number of columns per file.
+
 knn_distances2 = function(x, d, distance_metric = "euclidean", threads = NULL, file, cols = 1){
   require(parallelDist)
   require(parallel)
 
-  threads <- ifelse(is.null(threads), parallel::detectCores() - 1, threads)
+  # Default number of threads to be used
+  if (is.null(threads)) {
+    cores <- parallel::detectCores()
+    threads <- ifelse(cores == 1, cores, cores - 1)
+  }
 
   # Initialization of variables to be used
   y <- matrix(x, ncol = NCOL(x))
