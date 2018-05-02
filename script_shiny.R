@@ -96,4 +96,4 @@ ui <- navbarPage("",
             )
 
 # Now run the following: 
-shinyApp(server = server, ui = ui)
+#shinyApp(server = server, ui = ui)

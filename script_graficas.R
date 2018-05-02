@@ -22,9 +22,8 @@ combPlotMain <- subplot(pMain, pBarsMain, nrows = 2, shareX = TRUE)
 #                               Plots for optimization tab
 pOpt <- plot_ly(x = dates, y = x, type = "scatter",  name = "Real", mode = "lines")
 pOpt <- add_trace(pOpt, x = sub_dates, y = euc_prox, name = "Proximity")
-pOpt <- add_segments(pOpt, x = dates[init], xend = dates[init], y = min_x - 0.10 * (max_x - min_x), yend = max_x + 0.10 * (max_x - min_x), name = "Train")
+pOpt <- add_segments(pOpt, x = dates[test_init], xend = dates[test_init], y = min_x - 0.10 * (max_x - min_x), yend = max_x + 0.10 * (max_x - min_x), name = "Train")
 pOpt <- add_segments(pOpt, x = dates[test_init], xend = dates[test_init], y = min_x - 0.10 * (max_x - min_x), yend = max_x + 0.10 * (max_x - min_x), name = "Test")
-
 
 pOpt <- layout(pOpt, title = "Prediccion con distancia Euclídea", xaxis = list(rangeslider = list(type = "date")))
 
@@ -35,3 +34,4 @@ combPlotOpt <- subplot(pOpt, pBarsOpt, nrows = 2, shareX = TRUE)
 
 pContour <- plot_ly(x = ks , y = ds, z = t(res$errors), type = "contour", autocontour = TRUE, contours = list(showlabels = TRUE, coloring = "heatmap"))
 pContour <- layout(pContour, title = "MAE Optimization", xaxis = list(title = "K"), yaxis = list(title = "D") )
+

@@ -37,7 +37,7 @@ naive <- x[train_init:(NROW(x)-1)]
 # Exponential smoothing:
 # alpha = NULL - default alpha is estimated
 # initial = "simple" - the initial values are set to values obtained using simple calculations on the first few observations
-exp_smoothing <- fitted(ses(x, alpha = NULL, initial = "simple"))[(init+1):NROW(x)]
+exp_smoothing <- fitted(ses(x, alpha = NULL, initial = "simple"))[(train_init+1):n]
 
 # Data for errors table
 names_col <- c("Proximity")
