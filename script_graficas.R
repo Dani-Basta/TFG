@@ -1,24 +1,37 @@
 library(plotly)
 library(shiny)
+library(DT)
+
+#                                     Plots for main tab
+pMain <- plot_ly(x = dates, y = x, type = "scatter",  name = "Real", mode = "lines")
+pMain <- add_trace(pMain, x = sub_dates, y = euc_prox, name = "Proximity")
+pMain <- add_trace(pMain, x = sub_dates, y = naive, name = "Naive") 
+pMain <- add_trace(pMain, x = sub_dates, y = exp_smoothing, name = "Exponential Smoothing")
+pMain <- add_segments(pMain, x = dates[train_init], xend = dates[train_init], y = min_x - 0.10 * (max_x - min_x), yend = max_x + 0.10 * (max_x - min_x), name = "Train")
+pMain <- add_segments(pMain, x = dates[test_init], xend = dates[test_init], y = min_x - 0.10 * (max_x - min_x), yend = max_x + 0.10 * (max_x - min_x), name = "Test")
+
+pMain <- layout(pMain, title = "Prediccion con distancia Euclídea", xaxis = list(rangeslider = list(type = "date")))
+
+# Error bars
+pBarsMain <- plot_ly(x = sub_dates, y = x_err - euc_prox, name = "Proximity error", type = "bar")
+pBarsMain <- add_trace(pBarsMain, x = sub_dates, y = x_err - naive, name = "Naive error") 
+pBarsMain <- add_trace(pBarsMain, x = sub_dates, y = x_err - exp_smoothing, name = "Exponential Smoothing error") 
+pBarsMain <- layout(pBarsMain, yaxis = list( range = c( max(x_err)*-1, max(x_err) ) ))
+combPlotMain <- subplot(pMain, pBarsMain, nrows = 2, shareX = TRUE)
+
+#                               Plots for optimization tab
+pOpt <- plot_ly(x = dates, y = x, type = "scatter",  name = "Real", mode = "lines")
+pOpt <- add_trace(pOpt, x = sub_dates, y = euc_prox, name = "Proximity")
+pOpt <- add_segments(pOpt, x = dates[init], xend = dates[init], y = min_x - 0.10 * (max_x - min_x), yend = max_x + 0.10 * (max_x - min_x), name = "Train")
+pOpt <- add_segments(pOpt, x = dates[test_init], xend = dates[test_init], y = min_x - 0.10 * (max_x - min_x), yend = max_x + 0.10 * (max_x - min_x), name = "Test")
 
 
-pOpt <- plot_ly( y = subX, type = "scatter",  name = "Real", mode = "lines")
-pOpt <- add_trace(pOpt, y = naive, name = "Naive") 
-pOpt <- add_trace(pOpt, y = EucPro, name = "Proximity") 
-# pOpt <- add_trace(pOpt, y = ses, name = "SES", mode = plotMode) 
 pOpt <- layout(pOpt, title = "Prediccion con distancia Euclídea", xaxis = list(rangeslider = list(type = "date")))
 
-#p2 <- plot_ly(x = 1:(NROW(subX)-1), type = "scatter", y = subX[1:(NROW(subX)-1)], name = "Real", mode = "lines")
-#p2 <- add_trace(p2, y = EucPro[2:NROW(EucPro)], name = "Proximity") 
-#p2 <- add_trace(p2, y = EucTre[2:NROW(EucTre)], name = "Trend") 
-#p2 <- add_trace(p2, y = EucSame[2:NROW(EucSame)], name = "Same"
-#p2 <- layout(p2, title = "Prediccion desplazada")
+# Error bars
+pBarsOpt <- plot_ly(x = sub_dates, y = x_err - euc_prox, name = "Prediction error", type = "bar")
 
-pBars <- plot_ly( y = subX - EucPro, name = "Prediction Error", type = "bar")
-pBars <- add_trace(pBars, y = subX - naive, name = "Naive Error") 
-pBars <- layout(pBars, yaxis = list( range = c( max(subX)*-1, max(subX) ) ))
+combPlotOpt <- subplot(pOpt, pBarsOpt, nrows = 2, shareX = TRUE)
 
-combPlot <- subplot(pOpt, pBars, nrows = 2, shareX = TRUE)
-
-pOpt <- plot_ly(x = ks , y = ds, z = t(res$errors), type = "contour", autocontour = TRUE, contours = list(showlabels = TRUE, coloring = "heatmap") )
-pOpt <- layout(pOpt, title = "MAE Optimization", xaxis = list(title = "K"), yaxis = list(title = "D") )
+pContour <- plot_ly(x = ks , y = ds, z = t(res$errors), type = "contour", autocontour = TRUE, contours = list(showlabels = TRUE, coloring = "heatmap"))
+pContour <- layout(pContour, title = "MAE Optimization", xaxis = list(title = "K"), yaxis = list(title = "D") )
