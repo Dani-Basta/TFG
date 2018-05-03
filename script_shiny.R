@@ -2,20 +2,37 @@ server <- function(input, output, session) {
     
     updatePlotMain <- function(new_ts, name) {
       pMain <<- add_trace(pMain, x = sub_dates, y = new_ts, name = name)
-      pBarsMain <<- add_trace(pBarsMain, x = sub_dates, y = x_err - new_ts, name = name)
-      combPlotMain <<- subplot(pMain, pBarsMain, nrows = 2, shareX = TRUE)
+      pErrMain <<- add_trace(pErrMain, x = sub_dates, y = x_err - new_ts, name = name)
+      combPlotMain <<- subplot(pMain, pErrMain, nrows = 2, shareX = TRUE)
       combPlotMain
     }
   
     output$optimization <- renderPlotly({ pContour })
-    output$optPlot <- renderPlotly({ combPlotOpt })
+    
+    output$optPlot <- renderPlotly({ 
+        combPlotOpt 
+        click <- event_data("plotly_click")
+        if (is.null(click) ) 
+            return(combPlotOpt)
+        #click <- event_data("plotly_click")
+
+        auxPredtrain <- knn_past(x = x_train, k = click[[3]], d = click[[4]], init = train_init, 
+                                   distance_metric = distance, weight = "proximity", threads = nThreads)
+        auxPredtest <- knn_past(x = x, k = click[[3]], d = click[[4]], init = test_init, 
+                                  distance_metric = distance, weight = "proximity", threads = nThreads)
+        auxPred <- c(auxPredtrain, auxPredtest)
+        subplot(add_trace(pOpt, x = sub_dates, y = euc_prox, name = paste("K" , click[[3]], "D" , click[[4]]) ), 
+                add_trace(pBarsOpt, x = sub_dates, y = abs(x_err - auxPred), name = paste("K" , click[[3]], "D" , click[[4]], "error") ) , 
+                nrows = 2, shareX = TRUE)
+        
+    })
       
     observe({
       if (input$browse == 0) return()
       updateTextInput(session, "path",  value = file.choose())
     })
     
-    output$mainPlot <- renderPlotly({ 
+    output$mainPlot <- renderPlotly({
       if (input$upload == 0) {
         combPlotMain
       }
