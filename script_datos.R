@@ -5,8 +5,8 @@ library(zoo)
 #####
 #Load to Enviroment "knn_optim", "knn_past" and "knn_elements"
 
-x <- sunspot.month
-#x <- rain
+#x <- sunspot.month
+x <- rain
 
 n <- NROW(x)
 train_init <- floor(n * 0.7)
@@ -43,7 +43,7 @@ num_contours <- 40
 
 minimums <- head(sort.int(res$errors, index.return = TRUE)$ix , 5)
 
-x_minims <- minimums %% max(ks)
+x_minims <- ((minimums - 1) %% max(ks)) + 1
 y_minims <- ceiling(minimums/max(ks))
 
 # Exponential smoothing:
@@ -60,5 +60,5 @@ errors_matrix <- matrix(c(train_error, test_error), nrow = 1)
 # Data for selected points in contour
 selected_points <- matrix(rep(FALSE, NROW(res$errors) * NCOL(res$errors)), nrow = NROW(res$errors), ncol = NCOL(res$errors))
 for (i in 1:5) {
-  selected_points[x_minims[i], y_minims[i]] <- TRUE
+    selected_points[x_minims[i], y_minims[i]] <- TRUE
 }
