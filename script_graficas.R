@@ -53,14 +53,16 @@ pBarsOpt <- plot_ly(x = sub_dates, y = x_err - euc_prox, name = "Prediction erro
 
 combPlotOpt <- subplot(pOpt, pBarsOpt, nrows = 2, shareX = TRUE)
 
-pContour <- plot_ly(x = ks , y = ds, z = res$errors, transpose = TRUE, type = "contour", 
+pContourBase <- plot_ly(x = ks , y = ds, z = res$errors, transpose = TRUE, type = "contour", 
                     #Just indicate the number of line contours to plot
                     #autocontour = TRUE, contours = list(showlabels = TRUE, coloring = "heatmap") , ncontours = num_contours ,
                     
                     #version saying where to start doing lines, space between lines and where to stop
                     contours = list(showlabels = TRUE, coloring = "heatmap", start = cont_min, end = (cont_max_fix+cont_min)/2, size = (((cont_max_fix+cont_min)/2)-cont_min)/num_contours),
                     
-                    zmin = cont_min, zmax = cont_max_fix)
-pContour <- layout(pContour, title = "MAE Optimization", xaxis = list(title = "K"), yaxis = list(title = "D") )
+                    zmin = cont_min, zmax = cont_max_fix, hoverinfo="x+y+z")
+pContourBase <- layout(pContourBase, title = "MAE Optimization", xaxis = list(title = "K"), yaxis = list(title = "D") )
 ###provisional
-#add_trace(pContour, type = "scatter", mode = "markers",  x = x_minims, y = y_minims, marker = list(color = "red"), showlegend = FALSE)
+#(pContour, type = "scatter", mode = "markers",  x = x_minims, y = y_minims, marker = list(color = "red"), showlegend = FALSE)
+pContour <- pContourBase
+pContour <- add_trace(pContour, type = "scatter", mode = "markers", x = x_minims, y = y_minims, text = as.character(res$errors[x_minims, y_minims][,1]), marker = list(color = "red"), hoverinfo="x+y+text", showlegend = FALSE)

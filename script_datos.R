@@ -41,7 +41,7 @@ cont_min <- min(res$errors)
 cont_max_fix <- (max(res$errors) - (max(res$errors) - cont_min)*0.4)
 num_contours <- 40
 
-minimums <- head( sort.int(res$errors, index.return = TRUE)$ix , 5)
+minimums <- head(sort.int(res$errors, index.return = TRUE)$ix , 5)
 
 x_minims <- minimums %% max(ks)
 y_minims <- ceiling(minimums/max(ks))
@@ -56,3 +56,9 @@ names_col <- c("Proximity")
 train_error <- accuracy(ts(euc_prox_train), x_train_err)
 test_error <- accuracy(ts(euc_prox_test), x_test_err)
 errors_matrix <- matrix(c(train_error, test_error), nrow = 1)
+
+# Data for selected points in contour
+selected_points <- matrix(rep(FALSE, NROW(res$errors) * NCOL(res$errors)), nrow = NROW(res$errors), ncol = NCOL(res$errors))
+for (i in 1:5) {
+  selected_points[x_minims[i], y_minims[i]] <- TRUE
+}

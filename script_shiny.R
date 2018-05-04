@@ -7,7 +7,32 @@ server <- function(input, output, session) {
       combPlotMain
     }
   
-    output$optimization <- renderPlotly({ pContour })
+    output$optimization <- renderPlotly({ 
+      pContour 
+      click <- event_data("plotly_click")
+      if (is.null(click) ) {
+        return(pContour)
+      }
+      else {
+        k = click[[3]]
+        d = click[[4]]
+        # Selected points that are related to minimuns can't be taken out
+        for (i in 1:5) {
+          if(x_minims[i] == k && y_minims[i] == d) {
+            return(pContour)
+          }
+        }
+        selected_points[click[[3]], click[[4]]] <<- !selected_points[click[[3]], click[[4]]]
+        pContour <<- pContourBase
+        for (i in 1:NROW(selected_points)) {
+          for (j in 1:NCOL(selected_points)) {
+            if (selected_points[i, j])
+              pContour <<- add_trace(pContour, type = "scatter", mode = "markers", x = i, y = j, text = as.character(res$errors[i, j]), marker = list(color = "red"), hoverinfo="x+y+text", showlegend = FALSE)
+          }
+        }
+      }
+      pContour
+      })
     
     output$optPlot <- renderPlotly({ 
         combPlotOpt 
@@ -15,16 +40,18 @@ server <- function(input, output, session) {
         if (is.null(click) ) 
             return(combPlotOpt)
         #click <- event_data("plotly_click")
-
+        
         auxPredtrain <- knn_past(x = x_train, k = click[[3]], d = click[[4]], init = train_init, 
                                    distance_metric = distance, weight = "proximity", threads = nThreads)
         auxPredtest <- knn_past(x = x, k = click[[3]], d = click[[4]], init = test_init, 
                                   distance_metric = distance, weight = "proximity", threads = nThreads)
         auxPred <- c(auxPredtrain, auxPredtest)
-        subplot(add_trace(pOpt, x = sub_dates, y = euc_prox, name = paste("K" , click[[3]], "D" , click[[4]]) ), 
-                add_trace(pBarsOpt, x = sub_dates, y = abs(x_err - auxPred), name = paste("K" , click[[3]], "D" , click[[4]], "error") ) , 
-                nrows = 2, shareX = TRUE)
-        
+        pOpt <<- add_trace(pOpt, x = sub_dates, y = euc_prox, name = paste("K" , click[[3]], "D" , click[[4]]))
+        pBarsOpt <<- add_trace(pBarsOpt, x = sub_dates, y = abs(x_err - auxPred), name = paste("K" , click[[3]], "D" , click[[4]], "error"))
+        combPlotOpt <<- subplot(pOpt, pBarsOpt, nrows = 2, shareX = TRUE)
+          #subplot(add_trace(pOpt, x = sub_dates, y = euc_prox, name = paste("K" , click[[3]], "D" , click[[4]]) ), 
+          #      add_trace(pBarsOpt, x = sub_dates, y = abs(x_err - auxPred), name = paste("K" , click[[3]], "D" , click[[4]], "error") ) , 
+          #      nrows = 2, shareX = TRUE)
     })
       
     observe({
