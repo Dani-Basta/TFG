@@ -99,10 +99,9 @@ knn_optim_parallel2 = function(x, k, d, v = 1, init = NULL, distance_metric = "e
       distances_matrixes_sizes[i] <- attr(distances_matrix, "Size")
   }
 
-  # Once we have all distances matrixes we proceed to evaluate in parallel with a different combination
-  # of d and row.
-  # For each of the combinations we order all the neighbors(elements) by proximity and evaluate with
-  # all the posible values for k, taking each time the k-Nearest ones, to make k predictions.
+  # Once we have all distances matrixes we proceed to evaluate in parallel with a different d.
+  # For each d we take all the rows and for each of them we order all the neighbors(elements) by proximity
+  # and evaluate with all the posible values for k, taking each time the k-Nearest ones, to make k predictions.
   # Finally when we have all the predictions we calculate the error for each prediction and store them
   # in the variable of the foreach loop.
 
