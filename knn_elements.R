@@ -9,7 +9,6 @@
 #' @examples
 #' knn_elements(matrix(AirPassengers), 2)
 #' knn_elements(matrix(LakeHuron), 6)
-
 knn_elements <- function(y, d) {
   n <- NROW(y)
   m <- NCOL(y)
