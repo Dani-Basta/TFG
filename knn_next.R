@@ -23,7 +23,6 @@
 #' @examples
 #' knn_next(AirPassengers, 5, 2)
 #' knn_next(LakeHuron, 3, 6)
-
 knn_next <- function(y, k, d, v = 1, distance_metric = "euclidean", weight = "proximity", threads = NULL) {
   require(parallelDist)
   require(parallel)
@@ -45,13 +44,13 @@ knn_next <- function(y, k, d, v = 1, distance_metric = "euclidean", weight = "pr
   # between the most recent 'element' and the rest of the 'elements'
   distances <- parDist(elements_matrix, distance_metric, threads = threads)[1:(n - d)]
 
-  # Get the indexes of the k nearest neighbors ('elements')
-  k_nn <- head( (sort.int(distances, index.return = TRUE))$ix, k)
+  # Get the indexes of the k nearest 'elements', these are called neighbors
+  k_nn <- head((sort.int(distances, index.return = TRUE))$ix, k)
 
   # Calculate the weights for the future computation of the weighted mean
   weights <- switch(weight, proximity = 1 / (distances[k_nn] + .Machine$double.xmin * 1e150),
                            same = rep.int(1, k),
-                           trend = k:1)
+                           linear = k:1)
 
   # Calculate the predicted value
   prediction <- weighted.mean(y[n - k_nn + 1, v], weights)
