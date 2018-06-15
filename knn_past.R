@@ -61,9 +61,10 @@ knn_past <- function(y, k, d, v = 1, init = NULL, distance_metric = "euclidean",
       k_nn <- head((sort.int(distances_col, index.return = TRUE))$ix, k)
 
       # Calculate the weights for the future computation of the weighted mean
-      weights <- switch(weight, proximity = 1 / (distances_col[k_nn] + .Machine$double.xmin * 1e150),
-                               same = rep.int(1, k),
-                               linear = k:1)
+      weights <- switch(weight, 
+                        proximity = 1 / (distances_col[k_nn] + .Machine$double.xmin * 1e150),
+                        same = rep.int(1, k),
+                        linear = k:1)
 
       # Calculate the predicted value
       predictions[prediction_index] <- weighted.mean(y[n - j + 2 - k_nn, v], weights)

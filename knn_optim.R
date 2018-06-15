@@ -100,9 +100,10 @@ knn_optim <- function(y, k, d, v = 1, init = NULL, distance_metric = "euclidean"
               k_nn <- head(sorted_distances_col$ix, k_value)
 
               # Calculate the weights for the future computation of the weighted mean
-              weights <- switch(weight, proximity = 1 / (distances_col[k_nn] + .Machine$double.xmin * 1e150),
-                               same = rep.int(1, k_value),
-                               linear = k_value:1)
+              weights <- switch(weight, 
+                                proximity = 1 / (distances_col[k_nn] + .Machine$double.xmin * 1e150),
+                                same = rep.int(1, k_value),
+                                linear = k_value:1)
 
               # Calculate the predicted value
               predictions[k_index, n - init + 2 - j] <- weighted.mean(y[n - j + 2 - k_nn, v], weights)

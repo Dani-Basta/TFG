@@ -27,18 +27,20 @@
 #'   \item{MAPE}{Mean Absolute Percentage Error}
 #' }
 #' @param weight Type of weight to be used at the time of calculating the predicted value with a weighted mean.
-#' Three supported: proximity, same, trend.
+#' Three supported: proximity, same, linear.
 #' \describe{
 #'   \item{proximity}{the weight assigned to each neighbor is proportional to its distance}
 #'   \item{same}{all neighbors are assigned with the same weight}
-#'   \item{trend}{nearest neighbor is assigned with weight k, second closest neighbor with weight k-1, and so on until the
+#'   \item{linear}{nearest neighbor is assigned with weight k, second closest neighbor with weight k-1, and so on until the
 #'                least nearest neighbor which is assigned with a weight of 1.}
 #' }
 #' @param threads Number of threads to be used when parallelizing, default is number of cores detected - 1 or
 #' 1 if there is only one core.
 #' @return A matrix of errors, optimal K & D.
-
-knn_optim_parallel = function(x, k, d, v = 1, init = NULL, distance_metric = "euclidean", error_metric = "MAE", weight = "proximity", threads = NULL){
+#' @examples
+#' knn_optim_parallel(AirPassengers, 1:5, 1:3)
+#' knn_optim_parallel(LakeHuron, 1:10, 1:6)
+knn_optim_parallel <- function(y, k, d, v = 1, init = NULL, distance_metric = "euclidean", error_metric = "MAE", weight = "proximity", threads = NULL){
     require(parallelDist)
     require(forecast)
     require(foreach)
@@ -53,11 +55,11 @@ knn_optim_parallel = function(x, k, d, v = 1, init = NULL, distance_metric = "eu
 
     # Choose the appropiate index of the accuracy result, depending on the error_metric
     error_type <- switch(error_metric,
-                        ME = {1},
-                        RMSE = {2},
-                        MAE = {3},
-                        MPE = {4},
-                        MAPE = {5}
+                        ME = 1,
+                        RMSE = 2,
+                        MAE = 3,
+                        MPE = 4,
+                        MAPE = 5
     )
 
     # Sort k or d vector if they are unsorted
@@ -69,9 +71,8 @@ knn_optim_parallel = function(x, k, d, v = 1, init = NULL, distance_metric = "eu
     }
 
     # Initialization of variables to be used
-    y <- matrix(x, ncol = NCOL(x))
+    y <- matrix(y, ncol = NCOL(y))
     n <- NROW(y)
-    m <- NCOL(y)
     ks <- length(k)
     ds <- length(d)
     init <- ifelse(is.null(init), floor(n * 0.7), init)
@@ -81,20 +82,14 @@ knn_optim_parallel = function(x, k, d, v = 1, init = NULL, distance_metric = "eu
     distances_matrixes_sizes <- vector(mode = "numeric", ds)
 
     # In order to paralelise we calculate the distances matrix just once for each d, as the distance variates
-    # with the number of values that characterise each element.
+    # with the number of values that characterise each 'element'.
 
     #Calculate all distances matrixes
     for (i in 1:ds) {
-        # Get elements matrix
+        # Get 'elements' matrix
         elements_matrix <- knn_elements(y, d[i])
 
-        # This happens if d=1 and a univariate time series is given, a very unusual case
-        # This transformation is needed so that parDist doesn't throw an error
-        if (is(elements_matrix, "numeric")) {
-            elements_matrix <- matrix(elements_matrix, nrow = length(curr_elems))
-        }
-
-        # Calculate distances between every element, a 'triangular matrix' is returned
+        # Calculate distances between every 'element', a 'triangular matrix' is returned
         distances_matrix <- parDist(elements_matrix, distance_metric, threads = threads)
         distances_matrixes[[i]] <- distances_matrix
         distances_matrixes_sizes[i] <- attr(distances_matrix, "Size")
@@ -110,6 +105,9 @@ knn_optim_parallel = function(x, k, d, v = 1, init = NULL, distance_metric = "eu
     clust <- makeCluster(threads)
     registerDoParallel(cl = clust)
 
+    # This next is only done to avoid 'No visible binding for global variable' warning
+    # in R CMD check due to j variable used in foreach loop
+    j <- NULL
 all_predictions <- foreach(i = 1:ds, .combine = cbind) %:% foreach(j = (n - init + 1):2, .combine = cbind) %dopar% {
         predictions <- vector(mode = "numeric", ks)
 
@@ -121,14 +119,14 @@ all_predictions <- foreach(i = 1:ds, .combine = cbind) %:% foreach(j = (n - init
         for (k_index in 1:ks) {
             k_value <- k[k_index]
 
-            # Get the indexes k nearest neighbors(elements)
+            # Get the indexes of the k nearest 'elements', these are called neighbors
             k_nn <- head(sorted_distances_col$ix, k_value)
 
             # Calculate the weights for the future computation of the weighted mean
             weights <- switch(weight,
-                              proximity = {1 / (distances_col[k_nn] + .Machine$double.xmin * 1e150)},
-                              same = {rep.int(1, k_value)},
-                              trend = {k_value:1})
+                              proximity = 1 / (distances_col[k_nn] + .Machine$double.xmin * 1e150),
+                              same = rep.int(1, k_value),
+                              linear = k_value:1)
 
             # Calculate the predicted value
             predictions[k_index] <- weighted.mean(y[n - j + 2 - k_nn, v], weights)
@@ -140,8 +138,8 @@ all_predictions <- foreach(i = 1:ds, .combine = cbind) %:% foreach(j = (n - init
     registerDoSEQ()
     stopCluster(clust)
 
-    # Calculate error values between the known values and the predicted values, these values go from init to t - 1
-    # and for all Ks
+    # Calculate error values between the known values and the predicted values, these values
+    # correspond to instants init to n - 1. These is done for all k's and d's
     for (i in 1:ds) {
         initial_index <- (i - 1) * (n - init) + 1
         for (k_index in 1:ks) {
@@ -151,9 +149,9 @@ all_predictions <- foreach(i = 1:ds, .combine = cbind) %:% foreach(j = (n - init
 
     # Construction of the list to be returned
     index_min_error <- which.min(errors)
-    optK <- k[((index_min_error - 1) %% ks) + 1]
-    optD <- d[ceiling(index_min_error / ks)]
-    result <- list(errors = errors, k = optK, d = optD)
+    opt_k <- k[((index_min_error - 1) %% ks) + 1]
+    opt_d <- d[ceiling(index_min_error / ks)]
+    result <- list(errors = errors, k = opt_k, d = opt_d)
 
     result
 }
