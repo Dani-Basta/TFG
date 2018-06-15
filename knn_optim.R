@@ -76,20 +76,15 @@ knn_optim <- function(y, k, d, v = 1, init = NULL, distance_metric = "euclidean"
     init <- ifelse(is.null(init), floor(n * 0.7), init)
     real_values <- matrix(y[(init + 1):n, v])
     errors <- matrix(nrow = ks, ncol = ds, dimnames = list(k, d))
-    distances_matrixes <- vector("list", ds)
-
-    # Calculate all distances matrixes
-    for (i in 1:ds) {
-      # Get 'elements' matrix
-      elements_matrix <- knn_elements(y, d[i])
-
-      # Calculate distances between every 'element', a 'triangular matrix' is returned
-      distances_matrixes[[i]] <- parDist(elements_matrix, distance_metric, threads = threads)
-    }
 
     for (i in 1:ds) {
         predictions <- matrix(nrow = ks, ncol = n - init)
-        distances_matrix <- distances_matrixes[[i]]
+        
+        # Get 'elements' matrix
+        elements_matrix <- knn_elements(y, d[i])
+        
+        # Calculate distances between every 'element', a 'triangular matrix' is returned
+        distances_matrix <- parDist(elements_matrix, distance_metric, threads = threads)
         distances_matrix_size <- attr(distances_matrix, "Size")
 
         for (j in (n - init + 1):2) {
@@ -114,8 +109,8 @@ knn_optim <- function(y, k, d, v = 1, init = NULL, distance_metric = "euclidean"
             }
         }
 
-        # Calculate error values between the known values and the predicted values, these values go from init to t - 1
-        # and for all k's
+        # Calculate error values between the known values and the predicted values, these values
+        # correspond to instants init to n - 1, and for all k's
         for (k_index in 1:ks) {
           errors[k_index, i] <- accuracy(ts(predictions[k_index, ]), real_values)[error_type]
         }
