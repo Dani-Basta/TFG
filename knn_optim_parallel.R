@@ -99,7 +99,7 @@ knn_optim_parallel <- function(y, k, d, v = 1, init = NULL, distance_metric = "e
 
     # For each of the combinations of d's and instants init to n - 1, a distances vector
     # according to each combination is taken from the corresponding distances matrix and then
-    # orderd. Later, the k's inner loop applies k-nn to predict values.
+    # ordered. Later, the k's inner loop applies k-nn to predict values.
 
     clust <- makeCluster(threads)
     registerDoParallel(cl = clust)

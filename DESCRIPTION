@@ -1,13 +1,11 @@
 Package: knnp
 Version: 0.1-0
-Date: 2017-11-10
+Date: 2018-06-15
 Title: Time Series Prediction Using K-Nearest Neighbors Algorithm
 Authors@R: c(
   person("Daniel", "Bastarrica Lacalle", email="danibast@ucm.es", role=c("aut", "cre")),
   person("Javier", "Berdecio Trigueros", email="javiberd@ucm.es", role=c("aut"))
   )
-Depends: R (>= 3.1.0), rdist
-Description: Two main functionalities are provided. One of them is predicting values of a time series with 
-k-nearest neighbors algorithm and the other one is calibrating the parameters of the algorithm according to 
-a time series.
+Depends: R (>= 3.1.0), parallelDist, forecast, foreach, doParallel, iterators
+Description: Two main functionalities are provided. One of them is predicting values of a time series with k-nearest neighbors algorithm and the other one is optimizing the parameters k and d of the algorithm.
 License: AGPL-3
