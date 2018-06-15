@@ -10,7 +10,7 @@
 #' Link to the package info: https://cran.r-project.org/web/packages/parallelDist
 #' Some of the values that this argument can take are "euclidean", "manhattan", "dtw", "camberra", "chord".
 #' @param weight Type of weight to be used at the time of calculating the predicted value with a weighted mean.
-#' Three supported: proximity, same, trend.
+#' Three supported: proximity, same, linear.
 #' \describe{
 #'   \item{proximity}{the weight assigned to each neighbor is proportional to its distance}
 #'   \item{same}{all neighbors are assigned with the same weight}

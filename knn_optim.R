@@ -1,4 +1,4 @@
-#' Optimizes the values of K and D for a given time series. First, values corresponding to instants from init + 1 to the last one
+#' Optimizes the values of k and d for a given time series. First, values corresponding to instants from init + 1 to the last one
 #' are predicted. The first value predicted, which corresponds to instant init + 1, is calculated using instants from 1 to
 #' instant init; the second value predicted, which corresponds to instant init + 2, is predicted using instants from 1
 #' to instant init + 1; and so on until the last value, which corresponds to instant n (length of the given time series),
@@ -7,9 +7,9 @@
 #' This version of the optimization function only uses one thread except for the distances matrixes calculation, for which the
 #' number of threads to be used can be specified.
 #'
-#' @param x A time series.
-#' @param k Values of Ks to be analyzed.
-#' @param d Values of Ds to be analyzed.
+#' @param y A time series.
+#' @param k Values of k's to be analyzed.
+#' @param d Values of d's to be analyzed.
 #' @param v Variable to be predicted if given multivariate time series.
 #' @param init Variable that determines the limit of the known past for the first instant predicted.
 #' @param distance_metric Type of metric to evaluate the distance between points. Many metrics are supported: euclidean, manhattan,
@@ -27,18 +27,20 @@
 #'   \item{MAPE}{Mean Absolute Percentage Error}
 #' }
 #' @param weight Type of weight to be used at the time of calculating the predicted value with a weighted mean.
-#' Three supported: proximity, same, trend.
+#' Three supported: proximity, same, linear.
 #' \describe{
 #'   \item{proximity}{the weight assigned to each neighbor is proportional to its distance}
 #'   \item{same}{all neighbors are assigned with the same weight}
-#'   \item{trend}{nearest neighbor is assigned with weight k, second closest neighbor with weight k-1, and so on until the
+#'   \item{linear}{nearest neighbor is assigned with weight k, second closest neighbor with weight k-1, and so on until the
 #'                least nearest neighbor which is assigned with a weight of 1.}
 #' }
 #' @param threads Number of threads to be used when parallelizing, default is number of cores detected - 1 or
 #' 1 if there is only one core.
-#' @return A matrix of errors, optimal K & D.
-
-knn_optim = function(x, k, d, v = 1, init = NULL, distance_metric = "euclidean", error_metric = "MAE", weight = "proximity", threads = NULL){
+#' @return A matrix of errors, optimal k and d.
+#' @examples
+#' knn_optim(AirPassengers, 1:5, 1:3)
+#' knn_optim(LakeHuron, 1:10, 1:6)
+knn_optim <- function(y, k, d, v = 1, init = NULL, distance_metric = "euclidean", error_metric = "MAE", weight = "proximity", threads = NULL){
     require(parallelDist)
     require(parallel)
     require(forecast)
@@ -51,11 +53,11 @@ knn_optim = function(x, k, d, v = 1, init = NULL, distance_metric = "euclidean",
 
     # Choose the appropiate index of the accuracy result, depending on the error_metric
     error_type <- switch(error_metric,
-                        ME = {1},
-                        RMSE = {2},
-                        MAE = {3},
-                        MPE = {4},
-                        MAPE = {5}
+                        ME = 1,
+                        RMSE = 2,
+                        MAE = 3,
+                        MPE = 4,
+                        MAPE = 5
     )
 
     # Sort k or d vector if they are unsorted
@@ -67,9 +69,8 @@ knn_optim = function(x, k, d, v = 1, init = NULL, distance_metric = "euclidean",
     }
 
     # Initialization of variables to be used
-    y <- matrix(x, ncol = NCOL(x))
+    y <- matrix(y, ncol = NCOL(y))
     n <- NROW(y)
-    m <- NCOL(y)
     ks <- length(k)
     ds <- length(d)
     init <- ifelse(is.null(init), floor(n * 0.7), init)
@@ -77,18 +78,12 @@ knn_optim = function(x, k, d, v = 1, init = NULL, distance_metric = "euclidean",
     errors <- matrix(nrow = ks, ncol = ds, dimnames = list(k, d))
     distances_matrixes <- vector("list", ds)
 
-    #Calculate all distances matrixes
+    # Calculate all distances matrixes
     for (i in 1:ds) {
-      # Get elements matrix
+      # Get 'elements' matrix
       elements_matrix <- knn_elements(y, d[i])
 
-      # This happens if d=1 and a univariate time series is given, a very unusual case
-      # This transformation is needed so that parDist doesn't throw an error
-      if (is(elements_matrix, "numeric")) {
-        elements_matrix <- matrix(elements_matrix, nrow = length(curr_elems))
-      }
-
-      # Calculate distances between every element, a 'triangular matrix' is returned
+      # Calculate distances between every 'element', a 'triangular matrix' is returned
       distances_matrixes[[i]] <- parDist(elements_matrix, distance_metric, threads = threads)
     }
 
@@ -106,13 +101,13 @@ knn_optim = function(x, k, d, v = 1, init = NULL, distance_metric = "euclidean",
             for (k_index in 1:ks) {
               k_value <- k[k_index]
 
-              # Get the indexes k nearest elements
+              # Get the indexes of the k nearest 'elements', these are called neighbors
               k_nn <- head(sorted_distances_col$ix, k_value)
 
               # Calculate the weights for the future computation of the weighted mean
-              weights = switch(weight, proximity = {1 / (distances_col[k_nn] + .Machine$double.xmin * 1e150)},
-                               same = {rep.int(1, k_value)},
-                               trend = {k_value:1})
+              weights <- switch(weight, proximity = 1 / (distances_col[k_nn] + .Machine$double.xmin * 1e150),
+                               same = rep.int(1, k_value),
+                               linear = k_value:1)
 
               # Calculate the predicted value
               predictions[k_index, n - init + 2 - j] <- weighted.mean(y[n - j + 2 - k_nn, v], weights)
@@ -120,7 +115,7 @@ knn_optim = function(x, k, d, v = 1, init = NULL, distance_metric = "euclidean",
         }
 
         # Calculate error values between the known values and the predicted values, these values go from init to t - 1
-        # and for all Ks
+        # and for all k's
         for (k_index in 1:ks) {
           errors[k_index, i] <- accuracy(ts(predictions[k_index, ]), real_values)[error_type]
         }
@@ -128,9 +123,9 @@ knn_optim = function(x, k, d, v = 1, init = NULL, distance_metric = "euclidean",
 
     # Construction of the list to be returned
     index_min_error <- which.min(errors)
-    optK <- k[((index_min_error - 1) %% ks) + 1]
-    optD <- d[ceiling(index_min_error / ks)]
-    result <- list(errors = errors, k = optK, d = optD)
+    opt_k <- k[((index_min_error - 1) %% ks) + 1]
+    opt_d <- d[ceiling(index_min_error / ks)]
+    result <- list(errors = errors, k = opt_k, d = opt_d)
 
     result
 }
