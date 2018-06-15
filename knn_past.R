@@ -39,6 +39,7 @@ knn_past <- function(y, k, d, v = 1, init = NULL, distance_metric = "euclidean",
     threads <- ifelse(cores == 1, cores, cores - 1)
   }
 
+  # Initialization of variables to be used
   y <- matrix(y, ncol = NCOL(y))
   n <- NROW(y)
   init <- ifelse(is.null(init), init <- floor(n * 0.7), init)

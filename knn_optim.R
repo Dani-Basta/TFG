@@ -79,10 +79,10 @@ knn_optim <- function(y, k, d, v = 1, init = NULL, distance_metric = "euclidean"
 
     for (i in 1:ds) {
         predictions <- matrix(nrow = ks, ncol = n - init)
-        
+
         # Get 'elements' matrix
         elements_matrix <- knn_elements(y, d[i])
-        
+
         # Calculate distances between every 'element', a 'triangular matrix' is returned
         distances_matrix <- parDist(elements_matrix, distance_metric, threads = threads)
         distances_matrix_size <- attr(distances_matrix, "Size")
@@ -100,7 +100,7 @@ knn_optim <- function(y, k, d, v = 1, init = NULL, distance_metric = "euclidean"
               k_nn <- head(sorted_distances_col$ix, k_value)
 
               # Calculate the weights for the future computation of the weighted mean
-              weights <- switch(weight, 
+              weights <- switch(weight,
                                 proximity = 1 / (distances_col[k_nn] + .Machine$double.xmin * 1e150),
                                 same = rep.int(1, k_value),
                                 linear = k_value:1)
@@ -111,7 +111,7 @@ knn_optim <- function(y, k, d, v = 1, init = NULL, distance_metric = "euclidean"
         }
 
         # Calculate error values between the known values and the predicted values, these values
-        # correspond to instants init to n - 1, and for all k's
+        # correspond to instants init to n - 1. This is done for the current d and all k's
         for (k_index in 1:ks) {
           errors[k_index, i] <- accuracy(ts(predictions[k_index, ]), real_values)[error_type]
         }

@@ -33,6 +33,7 @@ knn_next <- function(y, k, d, v = 1, distance_metric = "euclidean", weight = "pr
     threads <- ifelse(cores == 1, cores, cores - 1)
   }
 
+  # Initialization of variables to be used
   y <- matrix(y, ncol = NCOL(y))
   n <- NROW(y)
 

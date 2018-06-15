@@ -5,11 +5,11 @@
 #' is predicted using instants from 1 to instant n - 1. Finally, the error is evaluated between the predicted values and
 #' the real values of the series.
 #' This version of the optimization function uses a parallelized distances calculation function, and the computation of
-#' the predicted values is done parallelizing by the number of Ds and the number of instants to be predicted.
+#' the predicted values is done parallelizing by the number of d's and the number of instants to be predicted.
 #'
-#' @param x A time series.
-#' @param k Values of Ks to be analyzed.
-#' @param d Values of Ds to be analyzed.
+#' @param y A time series.
+#' @param k Values of k's to be analyzed.
+#' @param d Values of d's to be analyzed.
 #' @param v Variable to be predicted if given multivariate time series.
 #' @param init Variable that determines the limit of the known past for the first instant predicted.
 #' @param distance_metric Type of metric to evaluate the distance between points. Many metrics are supported: euclidean, manhattan,
@@ -36,7 +36,7 @@
 #' }
 #' @param threads Number of threads to be used when parallelizing, default is number of cores detected - 1 or
 #' 1 if there is only one core.
-#' @return A matrix of errors, optimal K & D.
+#' @return A matrix of errors, optimal k and d.
 #' @examples
 #' knn_optim_parallel(AirPassengers, 1:5, 1:3)
 #' knn_optim_parallel(LakeHuron, 1:10, 1:6)
@@ -81,10 +81,12 @@ knn_optim_parallel <- function(y, k, d, v = 1, init = NULL, distance_metric = "e
     distances_matrixes <- vector("list", ds)
     distances_matrixes_sizes <- vector(mode = "numeric", ds)
 
-    # In order to paralelise we calculate the distances matrix just once for each d, as the distance variates
-    # with the number of values that characterise each 'element'.
+    # This next line is only there to avoid 'No visible binding for global variable' warning
+    # in R CMD check due to j variable used in foreach loop
+    j <- NULL
 
-    #Calculate all distances matrixes
+    # Calculate one distances matrix for each d, as the distances variates
+    # with the number of values that characterize each 'element'.
     for (i in 1:ds) {
         # Get 'elements' matrix
         elements_matrix <- knn_elements(y, d[i])
@@ -95,19 +97,13 @@ knn_optim_parallel <- function(y, k, d, v = 1, init = NULL, distance_metric = "e
         distances_matrixes_sizes[i] <- attr(distances_matrix, "Size")
     }
 
-    # Once we have all distances matrixes we proceed to evaluate in parallel with a different combination
-    # of d and row.
-    # For each of the combinations we order all the neighbors(elements) by proximity and evaluate with
-    # all the posible values for k, taking each time the k-Nearest ones, to make k predictions.
-    # Finally when we have all the predictions we calculate the error for each prediction and store them
-    # in the variable of the foreach loop.
+    # For each of the combinations of d's and instants init to n - 1, a distances vector
+    # according to each combination is taken from the corresponding distances matrix and then
+    # orderd. Later, the k's inner loop applies k-nn to predict values.
 
     clust <- makeCluster(threads)
     registerDoParallel(cl = clust)
 
-    # This next is only done to avoid 'No visible binding for global variable' warning
-    # in R CMD check due to j variable used in foreach loop
-    j <- NULL
 all_predictions <- foreach(i = 1:ds, .combine = cbind) %:% foreach(j = (n - init + 1):2, .combine = cbind) %dopar% {
         predictions <- vector(mode = "numeric", ks)
 
@@ -139,7 +135,7 @@ all_predictions <- foreach(i = 1:ds, .combine = cbind) %:% foreach(j = (n - init
     stopCluster(clust)
 
     # Calculate error values between the known values and the predicted values, these values
-    # correspond to instants init to n - 1. These is done for all k's and d's
+    # correspond to instants init to n - 1. These is done for all k's and d's analyzed
     for (i in 1:ds) {
         initial_index <- (i - 1) * (n - init) + 1
         for (k_index in 1:ks) {
