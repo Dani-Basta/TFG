@@ -10,14 +10,26 @@ server <- function(input, output, session) {
     output$optimization <- renderPlotly({
         #pContour 
         click <- event_data("plotly_click")
-        if (is.null(click) ) 
+            
+                print( length(click) ) ####
+                print(click) ####
+                if ( !is.null(click) ) { ####
+                    print( typeof(click[[2]][[1]]) )
+                    print( length(click[[2]][[1]]) )
+                    print( NROW(click[[2]][[1]]) )
+                    print( NCOL(click[[2]][[1]]) )
+                    print(click[[2]][[1]] )
+                    #click[2] ####
+                }
+        if (is.null(click) || length( click[[2]][[1]] ) == 1) 
             return(pContour)
+        
         
         k = click[[3]]
         d = click[[4]]
         # Selected points that are related to minimuns can't be taken out
         for (i in 1:5) {
-            if(x_minims[i] == k && y_minims[i] == d) {
+            if( x_minims[i] == k && y_minims[i] == d) {
                 return(pContour)
             }
         }
@@ -44,7 +56,7 @@ server <- function(input, output, session) {
     output$optPlot <- renderPlotly({ 
         #combPlotOpt 
         click <- event_data("plotly_click")
-        if (is.null(click) ) 
+        if (is.null(click) || length( click[[2]][[1]] ) == 1) 
             return(combPlotOpt)
         
         k = click[[3]]
