@@ -8,9 +8,11 @@ pMain <- add_trace(pMain, x = sub_dates, y = euc_prox, name = "Optimal", legendg
 pMain <- add_trace(pMain, x = sub_dates, y = naive, name = "Naive", legendgroup = "naive") 
 #pMain <- add_trace(pMain, x = sub_dates, y = exp_smoothing, name = "Exp Smooth", legendgroup = "pred")
 pMain <- add_segments(pMain, x = dates[train_init], xend = dates[train_init], y = min_x - 0.10 * (max_x - min_x), 
-                      yend = max_x + 0.10 * (max_x - min_x), name = "Train", showlegend = FALSE, hoverinfo = "all" )
+                      yend = max_x + 0.10 * (max_x - min_x), name = "Train", showlegend = FALSE, 
+                      hoverinfo = "all", legendgroup = "lines" )
 pMain <- add_segments(pMain, x = dates[test_init], xend = dates[test_init], y = min_x - 0.10 * (max_x - min_x), 
-                      yend = max_x + 0.10 * (max_x - min_x), name = "Test", showlegend = FALSE, hoverinfo = "all" )
+                      yend = max_x + 0.10 * (max_x - min_x), name = "Test", showlegend = FALSE, 
+                      hoverinfo = "all", legendgroup = "lines")
 
 pMain <- layout(pMain, xaxis = list(rangeslider = list(type = "date")))
 
@@ -43,9 +45,9 @@ combPlotMain <- subplot(pMain, pErrMain, nrows = 2, shareX = TRUE)
 #                               Plots for optimization tab
 pOpt <- plot_ly(x = dates, y = x, type = "scatter",  name = "Real", mode = "lines", legendgroup = "real", hoverinfo = "x+y")
 pOpt <- add_trace(pOpt, x = sub_dates, y = euc_prox, name = "Optim", legendgroup = "optim")
-pOpt <- add_segments(pOpt, x = dates[train_init], xend = dates[train_init], y = min_x - 0.10 * (max_x - min_x), 
+pOpt <- add_segments(pOpt, x = dates[train_init], xend = dates[train_init], y = min_x - 0.10 * (max_x - min_x), legendgroup = "lines", 
                      yend = max_x + 0.10 * (max_x - min_x), name = "Train", showlegend = FALSE, hoverinfo = "all")
-pOpt <- add_segments(pOpt, x = dates[test_init], xend = dates[test_init], y = min_x - 0.10 * (max_x - min_x), 
+pOpt <- add_segments(pOpt, x = dates[test_init], xend = dates[test_init], y = min_x - 0.10 * (max_x - min_x), legendgroup = "lines", 
                      yend = max_x + 0.10 * (max_x - min_x), name = "Test", showlegend = FALSE, hoverinfo = "all") 
 
 pOpt <- layout(pOpt, xaxis = list(rangeslider = list(type = "date")))
