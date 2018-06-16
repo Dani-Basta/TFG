@@ -1,4 +1,4 @@
-server <- function(input, output, session) { 
+server <- function(input, output, session) {
     
     updatePlotMain <- function(new_ts, name) {
         pMain <<- add_trace(pMain, x = sub_dates, y = new_ts, name = name)
@@ -7,7 +7,7 @@ server <- function(input, output, session) {
         combPlotMain
     }
     
-    output$optimization <- renderPlotly({ 
+    output$optimization <- renderPlotly({
         #pContour 
         click <- event_data("plotly_click")
         if (is.null(click) ) 
@@ -60,10 +60,10 @@ server <- function(input, output, session) {
             #auxPredtest <- knn_past(x = x, k = k, d = d, init = test_init, 
             #                        distance_metric = distance, weight = "proximity", threads = nThreads)
             #auxPred <- c(auxPredtrain, auxPredtest)
-            auxPred <- knn_past(x = x, k = k, d = d, init = train_init, 
+            auxPred <<- knn_past(y = x, k = k, d = d, init = train_init, 
                                      distance_metric = distance, weight = "proximity", threads = nThreads)
-            pOpt <<- add_trace(pOpt, x = sub_dates, y = auxPred, name = paste("K", k, "D", d))
-            pBarsOpt <<- add_trace(pBarsOpt, x = sub_dates, y = abs(x_err - auxPred), name = paste("K" , k, "D" , d, "error"))
+            pOpt <<- add_trace(pOpt, x = sub_dates, y = auxPred, name = paste("K", k, "D", d), legendgroup = paste("K", k, "D", d))
+            pBarsOpt <<- add_trace(pBarsOpt, x = sub_dates, y = abs(x_err - auxPred), name = paste("K" , k, "D" , d, "error"), legendgroup = paste("K", k, "D", d))
             combPlotOpt <<- subplot(pOpt, pBarsOpt, nrows = 2, shareX = TRUE)
             #subplot(add_trace(pOpt, x = sub_dates, y = auxPred, name = paste("K" , click[[3]], "D" , click[[4]]) ), 
             #      add_trace(pBarsOpt, x = sub_dates, y = abs(x_err - auxPred), name = paste("K" , k, "D" , d, "error") ) , 
@@ -82,11 +82,11 @@ server <- function(input, output, session) {
                     #auxPredtest <- knn_past(x = x, k = k, d = d, init = test_init, 
                     #                        distance_metric = distance, weight = "proximity", threads = nThreads)
                     #auxPred <- c(auxPredtrain, auxPredtest)
-                    auxPred <- knn_past(x = x, k = k, d = d, init = train_init, 
+                    auxPred <<- knn_past(y = x, k = k, d = d, init = train_init, 
                                         distance_metric = distance, weight = "proximity", threads = nThreads)
                     
-                    pOpt <<- add_trace(pOpt, x = sub_dates, y = auxPred, name = paste("K" , i, "D" , j))
-                    pBarsOpt <<- add_trace(pBarsOpt, x = sub_dates, y = abs(x_err - auxPred), name = paste("K", i, "D", j, "error"))
+                    pOpt <<- add_trace(pOpt, x = sub_dates, y = auxPred, name = paste("K" , i, "D" , j), legendgroup = paste("K" , i, "D" , j))
+                    pBarsOpt <<- add_trace(pBarsOpt, x = sub_dates, y = abs(x_err - auxPred), name = paste("K", i, "D", j, "error"), legendgroup = paste("K" , i, "D" , j))
                     combPlotOpt <<- subplot(pOpt, pBarsOpt, nrows = 2, shareX = TRUE)
             }
         }
@@ -181,4 +181,4 @@ ui <- navbarPage("",
 )
 
 # Now run the following: 
-#shinyApp(server = server, ui = ui)
+# shinyApp(server = server, ui = ui)
