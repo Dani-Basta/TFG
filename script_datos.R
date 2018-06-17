@@ -26,9 +26,9 @@ res <- knn_optim(y = y_train, k = ks, d = ds, init = train_init, distance_metric
                  error_metric = error_metric, weight = weight, threads = n_threads)
 
 optimal_train <- knn_past(y = y_train, k = res$k, d = res$d, init = train_init, 
-                           distance_metric = distance, weight = "proximity", threads = n_threads)
+                          distance_metric = distance, weight = weight, threads = n_threads)
 optimal_test <- knn_past(y = y, k = res$k, d = res$d, init = test_init, 
-                          distance_metric = distance, weight = "proximity", threads = n_threads)
+                         distance_metric = distance, weight = weight, threads = n_threads)
 optimal <- c(optimal_train, optimal_test)
 
 y_err <- ts(y[(train_init + 1):n])
@@ -47,7 +47,7 @@ y_minims <- ceiling(minimums/max(ks))
 
 
 # Data for residuals
-residuals_matrix <- matrix(nrow = 5, ncol = length(y_train_err) + length(y_test_err))
+residuals_matrix <- matrix(nrow = 5, ncol = length(y_err))
 residuals_matrix[1, ] <- y_err - optimal
 residuals_matrix[2, ] <- y_err - naive
 
