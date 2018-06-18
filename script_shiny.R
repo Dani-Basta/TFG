@@ -1,30 +1,44 @@
 server <- function(input, output, session) {
-    
     output$optimization <- renderPlotly({
         #pContour 
-        click <- event_data("plotly_click")
-        if (is.null(click) || ( length(click[[2]][[1]]) == 1 && click[[2]][[1]] != 0  ) ) 
-            return(pContour)
-        
-        k = click[[3]]
-        d = click[[4]]
-        # Selected points that are related to minimuns can't be taken out
-        for (i in 1:5) {
-            if (any(x_minims == k && y_minims == d) ) { 
-            #  (x_minims[i] == k && y_minims[i] == d) {
-                return(pContour)
-                any(x_minims == k && y_minims == d)
+        click <- event_data("plotly_click", source = "contour")
+        #if (is.null(click))
+            #return(pContour)
+        if (!is.null(click) ) {
+            k = click[[3]]
+            d = click[[4]]
+            if (x_minims[1] != k || y_minims[1] != d) {
+                selected_points[k, d] <<- !selected_points[k, d]
             }
         }
-        selected_points[k, d] <<- !selected_points[k, d]
-        if (selected_points[k,d]) { #it wasn't selected, so just have to add that dot
-            pContour <<- add_trace(pContour, type = "scatter", mode = "markers", x = k, y = d, 
-                                   text = as.character(res$errors[k, d]), marker = list(color = "red"), 
-                                   hoverinfo = "x+y+text", showlegend = FALSE)
-            return(pContour)
-        }
+        
+        # Selected points that are related to minimuns can't be taken out
+        #for (i in 1:5) {
+            #if (any(x_minims == k && y_minims == d) ) { 
+            #if (x_minims[i] == k && y_minims[i] == d) {
+                #return(pContour)
+            #}
+        #}
+        
+        
+       
+        #if (selected_points[k,d]) { #it wasn't selected, so just have to add that dot
+            #pContour <<- add_trace(pContour, type = "scatter", mode = "markers", x = k, y = d, 
+            #                       text = as.character(res$errors[k, d]), marker = list(color = "red"), 
+            #                       hoverinfo = "x+y+text", showlegend = FALSE)
+            #return(pContour)
+        #}
         #it was selected, so we have to add all the dots again
-        pContour <<- pContourBase
+        if (input$contourType == "trim") {
+            pContour <<- pContourTrim
+        }
+        else if (input$contourType == "naive") {
+            #falta crear en script_gráficas otra más
+            pContour <<- pContourBase
+        }
+        else {
+            pContour <<- pContourBase
+        }
         for (i in 1:NROW(selected_points)) {
             for (j in 1:NCOL(selected_points)) {
                 if (selected_points[i, j])
@@ -38,39 +52,106 @@ server <- function(input, output, session) {
     
     output$optPlot <- renderPlotly({
         #combPlotOpt
-        click <- event_data("plotly_click")
-        if (is.null(click) || ( length(click[[2]][[1]]) == 1 && click[[2]][[1]] != 0  ) ) 
-            return(combPlotOpt)
+        # if ( (!exists("lastChbAbs2val")) || lastChbAbs2val != input$chbabs_tab2 ) {
+        #     lastChbAbs2val <<- input$chbabs_tab2
+        #     print(paste0("Se ha quedado a ",lastChbAbs2val))
+        #     pOpt <<- pOptBase
+        #     pBarsOpt <<- pBarsOptBase
+        #     
+        #     if (input$chbabs_tab2 == TRUE) { 
+        #         pBarsOpt <<- add_trace(pBarsOpt, x = sub_dates, y = abs(residuals_matrix[1, ]), 
+        #                                name = "Optimal error", legendgroup = "optim")
+        #     }
+        #     else {
+        #         pBarsOpt <<- add_trace(pBarsOpt, x = sub_dates, y = residuals_matrix[1, ], 
+        #                                name = "Optimal error", legendgroup = "optim")
+        #     }
+        #     
+        #     for (i in 1:NROW(selected_points)) {
+        #         for (j in 1:NCOL(selected_points)) {
+        #             if (selected_points[i, j] && i != res$k && j != res$d) {
+        #                 preds <- knn_past(y = y, k = i, d = j, init = train_init, distance_metric = distance, 
+        #                                   weight = weight, threads = n_threads)
+        #                 pOpt <<- add_trace(pOpt, x = sub_dates, y = preds, name = paste("k =" , i, "d =" , j), 
+        #                                    legendgroup = paste("k", i, "d", j))
+        #                 #comprobar valor absoluto en el error 
+        #                 if (input$chbabs_tab2 == 1) { 
+        #                     pBarsOpt <<- add_trace(pBarsOpt, x = sub_dates, y = abs(y_err - preds), 
+        #                                            name = paste("k", i, "d", j, "error"), legendgroup = paste("k", i, "d", j))
+        #                 }
+        #                 else {
+        #                     pBarsOpt <<- add_trace(pBarsOpt, x = sub_dates, y = y_err - preds, 
+        #                                            name = paste("k", i, "d", j, "error"), legendgroup = paste("k", i, "d", j))
+        #                 }
+        #             }
+        #         }
+        #     }
+        #     
+        #     combPlotOpt <<- subplot(pOpt, pBarsOpt, nrows = 2, shareX = TRUE)
+        #     return(combPlotOpt)
+        # }
         
-        k = click[[3]]
-        d = click[[4]]
+        click <- event_data("plotly_click", source = "contour")
+        if (!is.null(click)) {
+            #print("Procesando click")
+            #print(click)
+            k = click[[3]]
+            d = click[[4]]
+            
+            # The best combination is always plotted
+            if (x_minims[1] == k && y_minims[1] == d)
+                return(combPlotOpt)
+        } 
         
-        # The best combination is always plotted
-        if (x_minims[1] == k && y_minims[1] == d)
-            return(combPlotOpt)
         
         
         # It wasn't selected, so just have to add that line
-        if (selected_points[k,d]) {
-            auxPred <- knn_past(y = y, k = k, d = d, init = train_init,
-                                distance_metric = distance, weight = weight, threads = n_threads)
-            pOpt <<- add_trace(pOpt, x = sub_dates, y = auxPred, name = paste("k =", k, "d =", d), legendgroup = paste("k", k, "d", d))
-            #comprobar valor absoluto en el error 
-            #if( == ) { } else { }
-            pBarsOpt <<- add_trace(pBarsOpt, x = sub_dates, y = abs(y_err - auxPred), name = paste("k =" , k, "d =" , d, "error"), legendgroup = paste("k", k, "d", d))
-            combPlotOpt <<- subplot(pOpt, pBarsOpt, nrows = 2, shareX = TRUE)
-            return( combPlotOpt )
-        }
+        # if (selected_points[k,d]) {
+        #     auxPred <- knn_past(y = y, k = k, d = d, init = train_init,
+        #                         distance_metric = distance, weight = weight, threads = n_threads)
+        #     pOpt <<- add_trace(pOpt, x = sub_dates, y = auxPred, name = paste("k =", k, "d =", d), 
+        #                        legendgroup = paste("k", k, "d", d))
+        #     #comprobar valor absoluto en el error 
+        #     if (input$chbabs_tab2 == 1) { 
+        #         pBarsOpt <<- add_trace(pBarsOpt, x = sub_dates, y = abs(y_err - auxPred), 
+        #                                name = paste("k" , k, "d" , d, "error"), legendgroup = paste("k", k, "d", d))
+        #     } 
+        #     else {
+        #         pBarsOpt <<- add_trace(pBarsOpt, x = sub_dates, y = y_err - auxPred, 
+        #                                name = paste("k" , k, "d" , d, "error"), legendgroup = paste("k", k, "d", d))
+        #     }
+        #     combPlotOpt <<- subplot(pOpt, pBarsOpt, nrows = 2, shareX = TRUE)
+        #     return( combPlotOpt )
+        # }
         
         # Erased one point, so we have to replot everything
         pOpt <<- pOptBase
         pBarsOpt <<- pBarsOptBase
+        if (input$chbabs_tab2 == 1) { 
+            pBarsOpt <<- add_trace(pBarsOpt, x = sub_dates, y = abs(residuals_matrix[1, ]), 
+                                   name = "Optimal error", legendgroup = "optim")
+        }
+        else {
+            pBarsOpt <<- add_trace(pBarsOpt, x = sub_dates, y = residuals_matrix[1, ], 
+                                   name = "Optimal error", legendgroup = "optim")
+        }
+        
         for (i in 1:NROW(selected_points)) {
             for (j in 1:NCOL(selected_points)) {
-                if (selected_points[i, j] && i != res$k && j != res$d) {
-                    preds <- knn_past(y = y, k = i, d = j, init = train_init, distance_metric = distance, weight = weight, threads = n_threads)
-                    pOpt <<- add_trace(pOpt, x = sub_dates, y = preds, name = paste("k" , i, "d" , j), legendgroup = paste("k", i, "d", j))
-                    pBarsOpt <<- add_trace(pBarsOpt, x = sub_dates, y = abs(y_err - preds), name = paste("k", i, "d", j, "error"), legendgroup = paste("k", i, "d", j))
+                if (selected_points[i, j]) {
+                    preds <- knn_past(y = y, k = i, d = j, init = train_init, distance_metric = distance, 
+                                      weight = weight, threads = n_threads)
+                    pOpt <<- add_trace(pOpt, x = sub_dates, y = preds, name = paste("k =" , i, "d =" , j), 
+                                       legendgroup = paste("k", i, "d", j))
+                    #comprobar valor absoluto en el error 
+                    if (input$chbabs_tab2 == 1) { 
+                        pBarsOpt <<- add_trace(pBarsOpt, x = sub_dates, y = abs(y_err - preds), 
+                                               name = paste("k", i, "d", j, "error"), legendgroup = paste("k", i, "d", j))
+                    }
+                    else {
+                        pBarsOpt <<- add_trace(pBarsOpt, x = sub_dates, y = y_err - preds, 
+                                               name = paste("k", i, "d", j, "error"), legendgroup = paste("k", i, "d", j))
+                    }
                 }
             }
         }
@@ -89,7 +170,8 @@ server <- function(input, output, session) {
             for (j in 1:NCOL(selected_points)) {
                 if (selected_points[i, j]){
                     names_col_local <- c(names_col_local, paste("k" , i, "d" , j))
-                    preds <- knn_past(y = y, k = i, d = j, init = train_init, distance_metric = distance, weight = weight, threads = n_threads)
+                    preds <- knn_past(y = y, k = i, d = j, init = train_init, distance_metric = distance, 
+                                      weight = weight, threads = n_threads)
                     residuals_aux <- y_err - preds
                     train_error <- accuracy(ts(residuals_aux[1:length(y_train_err)]), y_train_err)
                     test_error <- accuracy(ts(residuals_aux[(length(y_train_err) + 1):length(preds)]), y_test_err)
@@ -121,20 +203,24 @@ server <- function(input, output, session) {
         pMain  <- pMainBase
         
         if (input$chbabs == 1) {
-            pErrMain <- plot_ly(x = sub_dates, y = abs(residuals_matrix[1, ]), name = "Optimal error", type = "scatter", mode = "markers", legendgroup = "optim", hoverinfo = "x+y")
+            pErrMain <- plot_ly(x = sub_dates, y = abs(residuals_matrix[1, ]), name = "Optimal error", 
+                                type = "scatter", mode = "markers", legendgroup = "optim", hoverinfo = "x+y")
         }
         else {
-            pErrMain <- plot_ly(x = sub_dates, y = residuals_matrix[1, ], name = "Optimal error", type = "scatter", mode = "markers", legendgroup = "optim", hoverinfo = "x+y")
+            pErrMain <- plot_ly(x = sub_dates, y = residuals_matrix[1, ], name = "Optimal error", 
+                                type = "scatter", mode = "markers", legendgroup = "optim", hoverinfo = "x+y")
         }
         
         # Naive activated with checkbox
         if (input$chbnaive == 1) {
             pMain <- add_trace(pMain, x = sub_dates, y = naive, name = "Naive", legendgroup = "naive")
             if (input$chbabs == 1) {
-                pErrMain <- add_trace(pErrMain, x = sub_dates, y = abs(residuals_matrix[2, ]), name = "Naive error", legendgroup = "naive") 
+                pErrMain <- add_trace(pErrMain, x = sub_dates, y = abs(residuals_matrix[2, ]), 
+                                      name = "Naive error", legendgroup = "naive") 
             }
             else {
-                pErrMain <- add_trace(pErrMain, x = sub_dates, y = residuals_matrix[2, ], name = "Naive error", legendgroup = "naive") 
+                pErrMain <- add_trace(pErrMain, x = sub_dates, y = residuals_matrix[2, ], 
+                                      name = "Naive error", legendgroup = "naive") 
             }
         }
         
@@ -145,10 +231,12 @@ server <- function(input, output, session) {
             residuals_matrix[3, ] <- y_err - snaive
             pMain <- add_trace(pMain, x = sub_dates, y = snaive, name = "S. Naive", legendgroup = "snaive")
             if (input$chbabs == 1) {
-                pErrMain <- add_trace(pErrMain, x = sub_dates, y = abs(residuals_matrix[3, ]), name = "S. Naive error", legendgroup = "snaive") 
+                pErrMain <- add_trace(pErrMain, x = sub_dates, y = abs(residuals_matrix[3, ]), 
+                                      name = "S. Naive error", legendgroup = "snaive") 
             }
             else {
-                pErrMain <- add_trace(pErrMain, x = sub_dates, y = residuals_matrix[3, ], name = "S. Naive error", legendgroup = "snaive") 
+                pErrMain <- add_trace(pErrMain, x = sub_dates, y = residuals_matrix[3, ], 
+                                      name = "S. Naive error", legendgroup = "snaive") 
             }
         }
         
@@ -161,10 +249,12 @@ server <- function(input, output, session) {
             pMain <- add_trace(pMain, x = sub_dates, y = new_ts, name = name, legendgroup = name)
             residuals_matrix[5, ] <- y_err - new_ts
             if (input$chbabs == 1) {
-                pErrMain <- add_trace(pErrMain, x = sub_dates, y = abs(residuals_matrix[5, ]), name = paste(name, "error"), legendgroup = name)
+                pErrMain <- add_trace(pErrMain, x = sub_dates, y = abs(residuals_matrix[5, ]), 
+                                      name = paste(name, "error"), legendgroup = name)
             }
             else {
-                pErrMain <- add_trace(pErrMain, x = sub_dates, y = residuals_matrix[5, ], name = paste(name, "error"), legendgroup = name)
+                pErrMain <- add_trace(pErrMain, x = sub_dates, y = residuals_matrix[5, ], 
+                                      name = paste(name, "error"), legendgroup = name)
                 
             }
         }
@@ -250,7 +340,10 @@ ui <- navbarPage("",
                           mainPanel(
                               plotlyOutput("optimization")
                           ),
-                          
+                          sidebarPanel(
+                              radioButtons("contourType", label = "Type of contour", selected = "default",
+                                           choices = list("Default" = "default", "Contour lines under Naive" = "naive", "Top-values color trimmed" = "trim"))
+                          ),
                           headerPanel("Monthly sunspots since 1749"),
                           mainPanel(
                               plotlyOutput("optPlot") 

@@ -38,7 +38,7 @@ sub_dates <- tail(dates, length(y) - train_init)
 naive <- ts(y[train_init:(n - 1)])
 cont_min <- min(res$errors)
 cont_max_fix <- (max(res$errors) - (max(res$errors) - cont_min) * 0.4)
-num_contours <- 20
+num_contours <- 12
 
 minimums <- head(sort.int(res$errors, index.return = TRUE)$ix , 5)
 
@@ -59,7 +59,7 @@ naive_train_error <- accuracy(naive[1:length(y_train_err)], y_train_err)
 naive_test_error <- accuracy(naive[(length(y_test_err) + 1):length(naive)], y_test_err)
 
 errors_matrix <- matrix(nrow = 5, ncol = 14)
-errors_matrix[1, ] <- c(train_error, test_error)
+errors_matrix[1, ] <- c(optimal_train_error, optimal_test_error)
 errors_matrix[2, ] <- c(naive_train_error, naive_test_error)
 
 errors_matrix_tab1 <- errors_matrix
@@ -70,4 +70,3 @@ selected_methods <- rep(FALSE, 5)
 
 # Data for selected points in contour
 selected_points <- matrix(rep(FALSE, NROW(res$errors) * NCOL(res$errors)), nrow = NROW(res$errors), ncol = NCOL(res$errors))
-
