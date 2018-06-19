@@ -29,16 +29,27 @@ server <- function(input, output, session) {
             #return(pContour)
         #}
         #it was selected, so we have to add all the dots again
+        if (input$contourType != previous_countour) {
+          selected_points <<- selected_points_aux
+        }
+        
         if (input$contourType == "trim") {
             pContour <<- pContourTrim
+            previous_countour <<- "trim"
+            selected_points_aux <<- selected_points
         }
         else if (input$contourType == "naive") {
             #falta crear en script_gráficas otra más
             pContour <<- pContourBase
+            previous_countour <<- "naive"
+            selected_points_aux <<- selected_points
         }
         else {
             pContour <<- pContourBase
+            previous_countour <<- "default"
+            selected_points_aux <<- selected_points
         }
+
         for (i in 1:NROW(selected_points)) {
             for (j in 1:NCOL(selected_points)) {
                 if (selected_points[i, j])
@@ -60,11 +71,11 @@ server <- function(input, output, session) {
         #     
         #     if (input$chbabs_tab2 == TRUE) { 
         #         pBarsOpt <<- add_trace(pBarsOpt, x = sub_dates, y = abs(residuals_matrix[1, ]), 
-        #                                name = "Optimal error", legendgroup = "optim")
+        #                                name = "Optimal Error", legendgroup = "optim")
         #     }
         #     else {
         #         pBarsOpt <<- add_trace(pBarsOpt, x = sub_dates, y = residuals_matrix[1, ], 
-        #                                name = "Optimal error", legendgroup = "optim")
+        #                                name = "Optimal Error", legendgroup = "optim")
         #     }
         #     
         #     for (i in 1:NROW(selected_points)) {
@@ -77,11 +88,11 @@ server <- function(input, output, session) {
         #                 #comprobar valor absoluto en el error 
         #                 if (input$chbabs_tab2 == 1) { 
         #                     pBarsOpt <<- add_trace(pBarsOpt, x = sub_dates, y = abs(y_err - preds), 
-        #                                            name = paste("k", i, "d", j, "error"), legendgroup = paste("k", i, "d", j))
+        #                                            name = paste("k", i, "d", j, "Error"), legendgroup = paste("k", i, "d", j))
         #                 }
         #                 else {
         #                     pBarsOpt <<- add_trace(pBarsOpt, x = sub_dates, y = y_err - preds, 
-        #                                            name = paste("k", i, "d", j, "error"), legendgroup = paste("k", i, "d", j))
+        #                                            name = paste("k", i, "d", j, "Error"), legendgroup = paste("k", i, "d", j))
         #                 }
         #             }
         #         }
@@ -103,7 +114,9 @@ server <- function(input, output, session) {
                 return(combPlotOpt)
         } 
         
-        
+        if (input$contourType != previous_countour) {
+          selected_points <<- selected_points_aux
+        }
         
         # It wasn't selected, so just have to add that line
         # if (selected_points[k,d]) {
@@ -114,11 +127,11 @@ server <- function(input, output, session) {
         #     #comprobar valor absoluto en el error 
         #     if (input$chbabs_tab2 == 1) { 
         #         pBarsOpt <<- add_trace(pBarsOpt, x = sub_dates, y = abs(y_err - auxPred), 
-        #                                name = paste("k" , k, "d" , d, "error"), legendgroup = paste("k", k, "d", d))
+        #                                name = paste("k" , k, "d" , d, "Error"), legendgroup = paste("k", k, "d", d))
         #     } 
         #     else {
         #         pBarsOpt <<- add_trace(pBarsOpt, x = sub_dates, y = y_err - auxPred, 
-        #                                name = paste("k" , k, "d" , d, "error"), legendgroup = paste("k", k, "d", d))
+        #                                name = paste("k" , k, "d" , d, "Error"), legendgroup = paste("k", k, "d", d))
         #     }
         #     combPlotOpt <<- subplot(pOpt, pBarsOpt, nrows = 2, shareX = TRUE)
         #     return( combPlotOpt )
@@ -129,11 +142,11 @@ server <- function(input, output, session) {
         pBarsOpt <<- pBarsOptBase
         if (input$chbabs_tab2 == 1) { 
             pBarsOpt <<- add_trace(pBarsOpt, x = sub_dates, y = abs(residuals_matrix[1, ]), 
-                                   name = "Optimal error", legendgroup = "optim")
+                                   name = "Optimal Error", legendgroup = "optim")
         }
         else {
             pBarsOpt <<- add_trace(pBarsOpt, x = sub_dates, y = residuals_matrix[1, ], 
-                                   name = "Optimal error", legendgroup = "optim")
+                                   name = "Optimal Error", legendgroup = "optim")
         }
         
         for (i in 1:NROW(selected_points)) {
@@ -141,16 +154,16 @@ server <- function(input, output, session) {
                 if (selected_points[i, j]) {
                     preds <- knn_past(y = y, k = i, d = j, init = train_init, distance_metric = distance, 
                                       weight = weight, threads = n_threads)
-                    pOpt <<- add_trace(pOpt, x = sub_dates, y = preds, name = paste("k =" , i, "d =" , j), 
+                    pOpt <<- add_trace(pOpt, x = sub_dates, y = preds, name = paste0("k = " , i, ", d = " , j, ""), 
                                        legendgroup = paste("k", i, "d", j))
                     #comprobar valor absoluto en el error 
                     if (input$chbabs_tab2 == 1) { 
                         pBarsOpt <<- add_trace(pBarsOpt, x = sub_dates, y = abs(y_err - preds), 
-                                               name = paste("k", i, "d", j, "error"), legendgroup = paste("k", i, "d", j))
+                                               name = paste0("k = " , i, ", d = " , j, "", " Error"), legendgroup = paste("k", i, "d", j))
                     }
                     else {
                         pBarsOpt <<- add_trace(pBarsOpt, x = sub_dates, y = y_err - preds, 
-                                               name = paste("k", i, "d", j, "error"), legendgroup = paste("k", i, "d", j))
+                                               name = paste0("k = " , i, ", d = " , j, "", " Error"), legendgroup = paste("k", i, "d", j))
                     }
                 }
             }
@@ -161,20 +174,31 @@ server <- function(input, output, session) {
     })
     
     output$table_tab2 <- renderDataTable({
+        click <- event_data("plotly_click", source = "contour")
+        if (!is.null(click)) {
+          #print("Procesando click")
+          #print(click)
+          k = click[[3]]
+          d = click[[4]]
+        } 
+        
+        if (input$contourType != previous_countour) {
+          selected_points <<- selected_points_aux
+        }
+      
         names_col_local <- c(names_col[1])
         errors_matrix_local <- matrix(errors_matrix_tab2[1, ], nrow = 1)
-        names_col_local <- c(names_col_local, names_col[2])
-        errors_matrix_local <- rbind(errors_matrix_local, errors_matrix_tab2[2, ])
+        # names_col_local <- c(names_col_local, names_col[2])
+        # errors_matrix_local <- rbind(errors_matrix_local, errors_matrix_tab2[2, ])
         
         for (i in 1:NROW(selected_points)) {
             for (j in 1:NCOL(selected_points)) {
                 if (selected_points[i, j]){
-                    names_col_local <- c(names_col_local, paste("k" , i, "d" , j))
+                    names_col_local <- c(names_col_local, paste0("k = " , i, ", d = " , j, ""))
                     preds <- knn_past(y = y, k = i, d = j, init = train_init, distance_metric = distance, 
                                       weight = weight, threads = n_threads)
-                    residuals_aux <- y_err - preds
-                    train_error <- accuracy(ts(residuals_aux[1:length(y_train_err)]), y_train_err)
-                    test_error <- accuracy(ts(residuals_aux[(length(y_train_err) + 1):length(preds)]), y_test_err)
+                    train_error <- accuracy(ts(preds[1:length(y_train_err)]), y_train_err)
+                    test_error <- accuracy(ts(preds[(length(y_train_err) + 1):length(preds)]), y_test_err)
                     errors_aux <- c(train_error, test_error)
                     errors_matrix_local <- rbind(errors_matrix_local, errors_aux)
                 }
@@ -203,11 +227,11 @@ server <- function(input, output, session) {
         pMain  <- pMainBase
         
         if (input$chbabs == 1) {
-            pErrMain <- plot_ly(x = sub_dates, y = abs(residuals_matrix[1, ]), name = "Optimal error", 
+            pErrMain <- plot_ly(x = sub_dates, y = abs(residuals_matrix[1, ]), name = "Optimal Error", 
                                 type = "scatter", mode = "markers", legendgroup = "optim", hoverinfo = "x+y")
         }
         else {
-            pErrMain <- plot_ly(x = sub_dates, y = residuals_matrix[1, ], name = "Optimal error", 
+            pErrMain <- plot_ly(x = sub_dates, y = residuals_matrix[1, ], name = "Optimal Error", 
                                 type = "scatter", mode = "markers", legendgroup = "optim", hoverinfo = "x+y")
         }
         
@@ -216,11 +240,11 @@ server <- function(input, output, session) {
             pMain <- add_trace(pMain, x = sub_dates, y = naive, name = "Naive", legendgroup = "naive")
             if (input$chbabs == 1) {
                 pErrMain <- add_trace(pErrMain, x = sub_dates, y = abs(residuals_matrix[2, ]), 
-                                      name = "Naive error", legendgroup = "naive") 
+                                      name = "Naive Error", legendgroup = "naive") 
             }
             else {
                 pErrMain <- add_trace(pErrMain, x = sub_dates, y = residuals_matrix[2, ], 
-                                      name = "Naive error", legendgroup = "naive") 
+                                      name = "Naive Error", legendgroup = "naive") 
             }
         }
         
@@ -232,11 +256,11 @@ server <- function(input, output, session) {
             pMain <- add_trace(pMain, x = sub_dates, y = snaive, name = "S. Naive", legendgroup = "snaive")
             if (input$chbabs == 1) {
                 pErrMain <- add_trace(pErrMain, x = sub_dates, y = abs(residuals_matrix[3, ]), 
-                                      name = "S. Naive error", legendgroup = "snaive") 
+                                      name = "S. Naive Error", legendgroup = "snaive") 
             }
             else {
                 pErrMain <- add_trace(pErrMain, x = sub_dates, y = residuals_matrix[3, ], 
-                                      name = "S. Naive error", legendgroup = "snaive") 
+                                      name = "S. Naive Error", legendgroup = "snaive") 
             }
         }
         
@@ -250,11 +274,11 @@ server <- function(input, output, session) {
             residuals_matrix[5, ] <- y_err - new_ts
             if (input$chbabs == 1) {
                 pErrMain <- add_trace(pErrMain, x = sub_dates, y = abs(residuals_matrix[5, ]), 
-                                      name = paste(name, "error"), legendgroup = name)
+                                      name = paste(name, "Error"), legendgroup = name)
             }
             else {
                 pErrMain <- add_trace(pErrMain, x = sub_dates, y = residuals_matrix[5, ], 
-                                      name = paste(name, "error"), legendgroup = name)
+                                      name = paste(name, "Error"), legendgroup = name)
                 
             }
         }
@@ -307,36 +331,43 @@ server <- function(input, output, session) {
 } 
 
 ui <- navbarPage("",
-                 tabPanel("Graphics",
-                          titlePanel("Monthly sunspots since 1749"),
-                          mainPanel(
-                              # Display KNN results)
-                              plotlyOutput("mainPlot")   
-                          ),
-                          
-                          sidebarPanel(
+                 
+                 tabPanel("Vs",
+                          fluidPage(
+                            headerPanel("Time Series and Predictions"),
+                            mainPanel(
+                              plotlyOutput("mainPlot")
+                            ),
+                            sidebarPanel(
+                              tags$head(
+                                tags$style(HTML("hr {border-top: 1px solid #cbcbcb;}"))
+                              ),
                               checkboxInput("chbnaive", label = "Naive", value = TRUE),
-                              tags$hr(),
+                              hr(),
                               checkboxInput("chbsnaive", label = "Seasonal Naive", value = FALSE), 
-                              textInput("s", "Seasonality"),
-                              tags$hr(),
-                              checkboxInput("chbsload", label = "Load data", value = FALSE),
+                              textInput("s", "Lag:"),
+                              hr(),
+                              checkboxInput("chbsload", label = "Custom", value = FALSE),
                               textInput("path", "File:"),
                               actionButton("browse", "Browse"),
-                              tags$hr(),
-                              checkboxInput("chbabs", label = "Absolute error", value = FALSE)
-                          ),
-                          
-                          headerPanel("Table"),
-                          sidebarPanel(
-                              DT::dataTableOutput("table_tab1")
+                              hr(),
+                              materialSwitch(inputId = "chbabs", label = "Absolute Error", value = FALSE, status = "primary")
+                              #prettyCheckbox("chbabs", label = "Absolute Error", value = FALSE, thick = TRUE, shape = "curve", bigger = TRUE)
+                              
+                            ),
+                      
+                            headerPanel("Errors Table"),
+                            sidebarPanel(
+                                DT::dataTableOutput("table_tab1"),
+                                width = 10
+                            )
                           )
-                          
-                          
+         
                  ),
                  
                  
                  tabPanel("Optimization",
+                          headerPanel(HTML(paste0("Errors for each <em>k</em> and <em>d</em> (", error_metric, ")"))),
                           mainPanel(
                               plotlyOutput("optimization")
                           ),
@@ -344,16 +375,18 @@ ui <- navbarPage("",
                               radioButtons("contourType", label = "Type of contour", selected = "default",
                                            choices = list("Default" = "default", "Contour lines under Naive" = "naive", "Top-values color trimmed" = "trim"))
                           ),
-                          headerPanel("Monthly sunspots since 1749"),
+                          headerPanel("Time Series and Predictions"),
                           mainPanel(
                               plotlyOutput("optPlot") 
                           ),
                           sidebarPanel(
-                              checkboxInput("chbabs_tab2", label = "Absolute error", value = FALSE)
+                              materialSwitch(inputId = "chbabs_tab2", label = "Absolute Error", value = FALSE, status = "primary")
+                             # checkboxInput("chbabs_tab2", label = "Absolute Error", value = FALSE)
                           ),
-                          headerPanel("Table"),
+                          headerPanel("Errors Table"),
                           sidebarPanel(
-                              DT::dataTableOutput("table_tab2")
+                              DT::dataTableOutput("table_tab2"),
+                                width = 10
                           )
                  )
 )

@@ -1,10 +1,11 @@
 library(plotly)
 library(shiny)
+library(shinyWidgets)
 library(DT)
 
 #                                     Plots for main tab
-pMain <- plot_ly(x = dates, y = y, type = "scatter",  name = "Real", mode = "lines", legendgroup = "real", hoverinfo = "x+y")
-pMain <- add_trace(pMain, x = sub_dates, y = optimal, name = paste("Optimal k =", res$k, "d =", res$d), legendgroup = "optim")
+pMain <- plot_ly(x = dates, y = y, type = "scatter",  name = "Real Time Series", mode = "lines", legendgroup = "real", hoverinfo = "x+y")
+pMain <- add_trace(pMain, x = sub_dates, y = optimal, name = paste0("Optimal (k = ", res$k, ", d = ", res$d, ")"), legendgroup = "optim")
 # pMain <- add_trace(pMain, x = sub_dates, y = naive, name = "Naive", legendgroup = "naive")
 # Separation lines for train and test
 pMain <- add_segments(pMain, x = dates[train_init], xend = dates[train_init], y = min_y - 0.05 * (max_y - min_y), 
@@ -26,8 +27,8 @@ combPlotMain <- subplot(pMain, pErrMain, nrows = 2, shareX = TRUE)
 
 
 #                               Plots for optimization tab
-pOpt <- plot_ly(x = dates, y = y, type = "scatter",  name = "Real", mode = "lines", legendgroup = "real", hoverinfo = "x+y")
-pOpt <- add_trace(pOpt, x = sub_dates, y = optimal, name = paste("Optimal k =", res$k, "d =", res$d), legendgroup = "optim")
+pOpt <- plot_ly(x = dates, y = y, type = "scatter",  name = "Real Time Series", mode = "lines", legendgroup = "real", hoverinfo = "x+y")
+pOpt <- add_trace(pOpt, x = sub_dates, y = optimal, name = paste0("Optimal (k = ", res$k, ", d = ", res$d, ")"), legendgroup = "optim")
 pOpt <- add_segments(pOpt, x = dates[train_init], xend = dates[train_init], y = min_y - 0.05 * (max_y - min_y), 
                      yend = max_y + 0.05 * (max_y - min_y), name = "Train", showlegend = FALSE, text = "Train", 
                      hoverinfo = "text", legendgroup = "lines", line = list(color = "gray", width = 1.5, dash = "dash"))

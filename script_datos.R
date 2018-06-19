@@ -56,7 +56,7 @@ names_col <- c("Optimal", "Naive", "Seasonal Naive", "", "", "")
 optimal_train_error <- accuracy(ts(optimal_train), y_train_err)
 optimal_test_error <- accuracy(ts(optimal_test), y_test_err)
 naive_train_error <- accuracy(naive[1:length(y_train_err)], y_train_err)
-naive_test_error <- accuracy(naive[(length(y_test_err) + 1):length(naive)], y_test_err)
+naive_test_error <- accuracy(naive[(length(y_train_err) + 1):length(naive)], y_test_err)
 
 errors_matrix <- matrix(nrow = 5, ncol = 14)
 errors_matrix[1, ] <- c(optimal_train_error, optimal_test_error)
@@ -70,3 +70,13 @@ selected_methods <- rep(FALSE, 5)
 
 # Data for selected points in contour
 selected_points <- matrix(rep(FALSE, NROW(res$errors) * NCOL(res$errors)), nrow = NROW(res$errors), ncol = NCOL(res$errors))
+selected_points_aux <<- selected_points
+previous_countour <<- "default"
+
+# Index of error type
+# error_type <- switch(error_metric,
+#                      ME = 1,
+#                      RMSE = 2,
+#                      MAE = 3,
+#                      MPE = 4,
+#                      MAPE = 5)
