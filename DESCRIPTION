@@ -1,0 +1,25 @@
+Package: knnp
+Version: 1.0.0
+Date: 2018-06-18
+Title: Time Series Prediction using K-Nearest Neighbors Algorithm
+        (Parallel)
+Authors@R: c(
+  person("Daniel", "Bastarrica Lacalle", email="danibast@ucm.es", role=c("aut")),
+  person("Javier", "Berdecio Trigueros", email="javierberdeciot@gmail.com", role=c("aut", "cre"))
+  )
+Depends: R (>= 3.3.3)
+Imports: parallelDist, forecast, stats, utils, doParallel, foreach
+Description: Two main functionalities are provided. One of them is predicting values with 
+    k-nearest neighbors algorithm and the other is optimizing the parameters k and d of the algorithm.
+    These are carried out in parallel using multiple threads.
+License: AGPL-3
+RoxygenNote: 6.0.1
+URL: https://github.com/Dani-Basta/TFG
+BugReports: https://github.com/Dani-Basta/TFG/issues
+NeedsCompilation: no
+Packaged: 2018-06-18 04:15:01 UTC; javier
+Author: Daniel Bastarrica Lacalle [aut],
+  Javier Berdecio Trigueros [aut, cre]
+Maintainer: Javier Berdecio Trigueros <javierberdeciot@gmail.com>
+Repository: CRAN
+Date/Publication: 2018-07-01 15:00:02 UTC
