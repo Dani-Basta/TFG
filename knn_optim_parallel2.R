@@ -36,10 +36,10 @@
 #' }
 #' @param threads Number of threads to be used when parallelizing, default is number of cores detected - 1 or
 #' 1 if there is only one core.
-#' @return A matrix of errors, optimal k and d.
+#' @return A matrix of errors, optimal k and d. All tested ks and ks and all the used metrics.
 #' @examples
 #' knn_optim_parallel2(AirPassengers, 1:5, 1:3)
-#' knn_optim_parallel2(LakeHuron, 1:10, 1:6)
+#' knn_optim_parallel2(LakeHuron, 1:10, 1:6)mosa
 knn_optim_parallel2 <- function(y, k, d, v = 1, init = NULL, distance_metric = "euclidean", error_metric = "MAE", weight = "proximity", threads = NULL){
   require(parallelDist)
   require(forecast)
@@ -47,6 +47,14 @@ knn_optim_parallel2 <- function(y, k, d, v = 1, init = NULL, distance_metric = "
   require(doParallel)
   require(iterators)
 
+  if( any( is.na(y) ) ){
+    warning("There are NAs values in the time series", immediate. = TRUE)
+  }
+  
+  if(any( is.nan(y) )){
+    warning("There are NaNs values in the time series", immediate. = TRUE)
+  }
+  
   # Default number of threads to be used
   if (is.null(threads)) {
     cores <- parallel::detectCores()
@@ -59,8 +67,19 @@ knn_optim_parallel2 <- function(y, k, d, v = 1, init = NULL, distance_metric = "
                       RMSE = 2,
                       MAE = 3,
                       MPE = 4,
-                      MAPE = 5
+                      MAPE = 5,
+                      0
   )
+  
+  if ( error_type == 0 ) {
+    error_type <- 3
+    warning(paste0("Error metric '", error_metric, "' unrecognized. Using MAE as default"), immediate. = TRUE)
+  }
+  
+  if ( ! any( weight == c("proximity", "same", "linear") ) ) {
+    warning(paste0("Weight metric '", weight, "' unrecognized. Using 'proximity' as default"), immediate. = TRUE)
+    weight <- "proximity"
+  }
 
   # Sort k or d vector if they are unsorted
   if (is.unsorted(k)) {
@@ -70,13 +89,28 @@ knn_optim_parallel2 <- function(y, k, d, v = 1, init = NULL, distance_metric = "
       d <- sort(d)
   }
 
+  model <- list()
+  class(model) <- "kNN"
+
+  
   # Initialization of variables to be used
-  y <- matrix(y, ncol = NCOL(y))
+  if ( any(class(y) == "tbl_ts")) {
+    require(tsibble)
+    if (length(measured_vars(y)) < v ) {
+      stop(paste0("Index of variable off limits: v = ", v, " but given time series has ", length(measured_vars(y)), " variables."))
+    }
+    y <- matrix(sapply( y[ measured_vars(y) ], as.double), ncol = length(measures(y) ) )
+  }
+  else{
+    y <- matrix(sapply(y, as.numeric), ncol = NCOL(y))
+  }
   n <- NROW(y)
   ks <- length(k)
   ds <- length(d)
   init <- ifelse(is.null(init), floor(n * 0.7), init)
   real_values <- matrix(y[(init + 1):n, v])
+  
+  expSmoVal <- 0.5
 
   # This next line is only there to avoid 'No visible binding for global variable' warning
   # in R CMD check due to i variable used in foreach loop
@@ -97,13 +131,13 @@ knn_optim_parallel2 <- function(y, k, d, v = 1, init = NULL, distance_metric = "
     elements_matrix <- knn_elements(y, d[i])
 
     # Calculate distances between every 'element', a 'triangular matrix' is returned
-    distances_matrix <- parDist(elements_matrix, distance_metric, threads = threads)
+    distances_matrix <- parDist(elements_matrix, method = distance_metric, threads = threads)
     distances_matrix_size <- attr(distances_matrix, "Size")
 
     for (j in (n - init + 1):2) {
       # Get column needed from the distances matrix and sort it
       initial_index <- distances_matrix_size * (j - 1) - j * (j - 1) / 2 + 1
-      distances_col <- distances_matrix[initial_index:(initial_index + n - d[i] - j)]
+      distances_col <- distances_matrix[ initial_index:(initial_index + n - d[i] - j) ]
       sorted_distances_col <- sort.int(distances_col, index.return = TRUE)
 
       for (k_index in 1:ks) {
@@ -111,12 +145,20 @@ knn_optim_parallel2 <- function(y, k, d, v = 1, init = NULL, distance_metric = "
 
         # Get the indexes of the k nearest 'elements', these are called neighbors
         k_nn <- head(sorted_distances_col$ix, k_value)
+        
+        if ( weight == "expSmooth" ) {
+            k_nn <- sort.int(k_nn)
+        }
 
         # Calculate the weights for the future computation of the weighted mean
         weights <- switch(weight,
                           proximity = 1 / (distances_col[k_nn] + .Machine$double.xmin * 1e150),
                           same = rep.int(1, k_value),
-                          linear = k_value:1)
+                          linear = k_value:1,
+                          #expSmooth = expSmoVal ** k_value:1
+                          expSmooth = expSmoVal * (1 - expSmoVal) ** (k_value - 1):0 ,
+                          rep.int(1, k_value)
+                        )
 
         # Calculate the predicted value
         predictions[k_index, n - init + 2 - j] <- weighted.mean(y[n - j + 2 - k_nn, v], weights)
@@ -140,7 +182,20 @@ knn_optim_parallel2 <- function(y, k, d, v = 1, init = NULL, distance_metric = "
   opt_k <- k[((index_min_error - 1) %% ks) + 1]
   opt_d <- d[ceiling(index_min_error / ks)]
   dimnames(errors_matrix) <- list(k, d)
-  result <- list(errors = errors_matrix, k = opt_k, d = opt_d)
-
-  result
+  
+  #result <- list(errors = errors_matrix, k = opt_k, d = opt_d)
+  model$method <- "k-Nearest Neighbors"
+  model$opt_k <- opt_k
+  model$opt_d <- opt_d
+  model$tested_ds <- d
+  model$tested_ks <- k
+  model$errors <- errors_matrix
+  model$init_index <- init
+  model$distance <- distance_metric
+  model$error <- error_metric
+  model$weight <- weight
+  model$call <- deparse(sys.call())
+  
+  #result
+  model
 }

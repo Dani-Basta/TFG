@@ -47,7 +47,7 @@ knn_optim <- function(y, k, d, v = 1, init = NULL, distance_metric = "euclidean"
 
     # Default number of threads to be used
     if (is.null(threads)) {
-      cores <- parallel::detectCores()
+      cores <- parallel::detectCores(logical = FALSE)
       threads <- ifelse(cores == 1, cores, cores - 1)
     }
 

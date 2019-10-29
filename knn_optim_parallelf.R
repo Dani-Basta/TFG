@@ -71,11 +71,14 @@ knn_optim_parallelf <- function(y, k, d, v = 1, init = NULL, error_metric = "MAE
   }
 
   # Initialization of variables to be used
-  y <- matrix(y, ncol = NCOL(y))
+  y <- as.matrix(sapply(y, as.numeric), ncol = NCOL(y))
   n <- NROW(y)
   ks <- length(k)
   ds <- length(d)
-  init <- ifelse(is.null(init), floor(n * 0.7), init)
+  init <- ifelse(is.null(init), floor(n * 0.7), init)  
+  
+  expSmoVal <- 0.5
+  
   real_values <- matrix(y[(init + 1):n, v])
   errors <- matrix(nrow = ks, ncol = ds, dimnames = list(k, d))
 
@@ -103,12 +106,18 @@ knn_optim_parallelf <- function(y, k, d, v = 1, init = NULL, error_metric = "MAE
 
           # Get the indexes of the k nearest 'elements', these are called neighbors
           k_nn <- head(sorted_distances_col$ix, k_value)
+          
+          if ( weight == "expSmooth" )
+              k_nn <- sort.int(k_nn)
 
           # Calculate the weights for the future computation of the weighted mean
           weights <- switch(weight,
                             proximity = 1 / (distances_col[k_nn] + .Machine$double.xmin * 1e150),
                             same = rep.int(1, k_value),
-                            linear = k_value:1)
+                            linear = k_value:1,
+                            #expSmooth = expSmoVal ** k_value:1
+                            expSmooth = expSmoVal * (1 - expSmoVal) ** (k_value - 1):0 
+                        )
 
           # Calculate the predicted value
           predictions[k_index] <- weighted.mean(y[n - j + 2 - k_nn, v], weights)

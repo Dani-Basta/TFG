@@ -72,7 +72,7 @@ knn_optim_parallelf2 = function(y, k, d, v = 1, init = NULL, error_metric = "MAE
   }
 
   # Initialization of variables to be used
-  y <- matrix(y, ncol = NCOL(y))
+  y <- as.matrix(sapply(y, as.numeric), ncol = NCOL(y))
   n <- NROW(y)
   m <- NCOL(y)
   ks <- length(k)

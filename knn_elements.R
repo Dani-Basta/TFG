@@ -16,6 +16,7 @@ knn_elements <- function(y, d) {
 
   # Fill matrix as described above, it is done vertically for efficiency reasons
   elements_matrix <- matrix(nrow = last_elem + 1, ncol = d * m)
+  
   col <- 1
   for (i in 1:m) {
     for (j in 1:d) {

@@ -26,7 +26,7 @@ knn_distances2 <- function(y, d, distance_metric = "euclidean", threads = NULL, 
   }
 
   # Initialization of variables to be used
-  y <- matrix(y, ncol = NCOL(y))
+  y <- as.matrix(sapply(y, as.numeric), ncol = NCOL(y))
   n <- NROW(y)
 
   # Calculate one distances matrix for each d, as the distance variates

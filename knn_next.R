@@ -27,6 +27,13 @@ knn_next <- function(y, k, d, v = 1, distance_metric = "euclidean", weight = "pr
   require(parallelDist)
   require(parallel)
 
+  if (any( is.na(y) ) ){
+    warning("There are NAs values in the time series", immediate. = TRUE)
+  }
+  
+  if (any( is.nan(y) )){
+    warning("There are NaNs values in the time series", immediate. = TRUE)
+  }
   # Default number of threads to be used
   if (is.null(threads)) {
     cores <- parallel::detectCores()
@@ -34,8 +41,53 @@ knn_next <- function(y, k, d, v = 1, distance_metric = "euclidean", weight = "pr
   }
 
   # Initialization of variables to be used
-  y <- matrix(y, ncol = NCOL(y))
   n <- NROW(y)
+  
+  model <- list()
+  class(model) <- "kNN"
+  
+  model$method <- "k-Nearest Neighbors"
+  model$k <- k
+  model$d <- d
+  model$distance <- distance_metric
+  model$weight <- weight
+  
+  forec <- list()
+  class(forec) <- "forecast"
+  forec$model <- model
+  forec$method <- "k-Nearest Neighbors for unknown observations"
+
+  if ( any(class(y) == "ts" ) ) {
+    require(tseries)
+    sta <- time(y)[n]
+    freq <- frequency(y)
+    resType = "ts"
+    
+    y <- matrix(sapply(y, as.double), ncol = NCOL(y))
+  }
+  else if ( any(class(y) == "tbl_ts")) {
+    require(tsibble)
+    resul <- tail( append_row(y), 1 )
+
+    resType = "tsibble"
+    
+    # y <- matrix(sapply(y$value, as.double), ncol = 1)
+    # 
+    # y <- matrix(sapply( y[ measured_vars(y)[v] ], as.double), ncol = 1)
+    
+    y <- matrix(sapply( y[ measured_vars(y) ], as.double), ncol = length(measures(y) ))
+  } 
+  else{
+    resType = "undef"
+    
+    y <- matrix(sapply(y, as.double), ncol = NCOL(y))
+  }
+  
+  forec$x <- y
+  
+  # y <- matrix(sapply(y, as.numeric), ncol = NCOL(y), byrow = FALSE)
+  
+  expSmoVal <- 0.5
 
   # Get 'elements' matrix
   elements_matrix <- knn_elements(y, d)
@@ -47,15 +99,43 @@ knn_next <- function(y, k, d, v = 1, distance_metric = "euclidean", weight = "pr
 
   # Get the indexes of the k nearest 'elements', these are called neighbors
   k_nn <- head((sort.int(distances, index.return = TRUE))$ix, k)
+  
+  forec$neighbors <- k_nn
+  
+  if ( weight == "expSmooth" )
+      k_nn <- sort.int(k_nn)
 
   # Calculate the weights for the future computation of the weighted mean
   weights <- switch(weight, 
                     proximity = 1 / (distances[k_nn] + .Machine$double.xmin * 1e150),
                     same = rep.int(1, k),
-                    linear = k:1)
+                    linear = k:1,
+                    #expSmooth = expSmoVal ** k_value:1
+                    expSmooth = expSmoVal * (1 - expSmoVal) ** (k - 1):0 
+                )
 
   # Calculate the predicted value
   prediction <- weighted.mean(y[n - k_nn + 1, v], weights)
-
-  prediction
+  
+  
+  
+  if ( resType == "ts" )  {
+    forec$mean <- tail(ts(c(1, prediction), start = sta, frequency = freq ), 1)
+  }
+  else if ( resType == "tsibble" ) {
+    # resul$value <- prediction
+    resul[ measured_vars(resul)[v] ] <- prediction
+    forec$mean <- resul
+  } 
+  else{
+    forec$mean <- prediction
+  }
+  
+  forec$lower <- NA
+  forec$upper <- NA
+  
+  forec$residuals <- tail(y[,v], 1) - prediction
+  
+  forec
+  
 }
