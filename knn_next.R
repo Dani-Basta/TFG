@@ -93,7 +93,7 @@ knn_next <- function(y, k, d, v = 1, distance_metric = "euclidean", weight = "pr
   elements_matrices <- plyr::alply(y, 2, function(y_col) knn_elements(matrix(y_col, ncol = 1), d))
 
   # For each of the elements matrices, calculate the distances between 
-  # every 'element' resulting in a 'triangular matrix'.
+  # every 'element'. This results in a list of triangular matrices.
   # Notice that only the first column is taken because that corresponds 
   # to the distances between the most recent 'element' and the rest
   # of the 'elements' which is all is needed.
