@@ -127,11 +127,16 @@ knn_optim_parallel2 <- function(y, k, d, v = 1, init = NULL, distance_metric = "
     predictions <- matrix(nrow = ks, ncol = n - init)
     errors <- vector(mode = "numeric", ks)
 
-    # Get 'elements' matrix
-    elements_matrix <- knn_elements(y, d[i])
+    # Get 'elements' matrices (one per variable)
+    elements_matrices <- plyr::alply(y, 2, function(y_col) knn_elements(matrix(y_col, ncol = 1), d[i]))
 
-    # Calculate distances between every 'element', a 'triangular matrix' is returned
-    distances_matrix <- parDist(elements_matrix, method = distance_metric, threads = threads)
+    # For each of the elements matrices, calculate the distances between 
+    # every 'element'. This results in a list of triangular matrices.
+    distances_matrices <- plyr::llply(elements_matrices, function(elements_matrix) parallelDist::parDist(elements_matrix, distance_metric, threads = threads))
+
+    # Combine all distances matrices by aggregating them
+    distances_matrix <- Reduce('+', distances_matrices)
+
     distances_matrix_size <- attr(distances_matrix, "Size")
 
     for (j in (n - init + 1):2) {
