@@ -92,11 +92,9 @@ knn_next <- function(y, k, d, v = 1, distance_metric = "euclidean", weight = "pr
   # Get 'elements' matrices (one per variable)
   elements_matrices <- plyr::alply(y, 2, function(y_col) knn_elements(matrix(y_col, ncol = 1), d))
 
-  # For each of the elements matrices, calculate the distances between 
-  # every 'element'. This results in a list of triangular matrices.
-  # Notice that only the first column is taken because that corresponds 
-  # to the distances between the most recent 'element' and the rest
-  # of the 'elements' which is all is needed.
+  # For each of the elements matrices, obtain the distances between 
+  # the most recent 'element' and the rest of the 'elements'.
+  # This results in a list of distances vectors
   distances_vectors <- plyr::llply(elements_matrices, function(elements_matrix) parallelDist::parDist(elements_matrix, distance_metric, threads = threads)[1:(n - d)])
 
   # Combine all distances vectors by aggregating them
