@@ -40,24 +40,24 @@
 #' @examples
 #' knn_optim_parallel2(AirPassengers, 1:5, 1:3)
 #' knn_optim_parallel2(LakeHuron, 1:10, 1:6)mosa
-knn_optim_parallel2 <- function(y, k, d, v = 1, init = NULL, distance_metric = "euclidean", error_metric = "MAE", weight = "proximity", threads = NULL){
+knn_optim_parallel2 <- function(y, k, d, v = 1, init = NULL, distance_metric = "euclidean", error_metric = "MAE", weight = "proximity", threads = 1){
   require(parallelDist)
   require(forecast)
   require(foreach)
   require(doParallel)
   require(iterators)
 
-  if( any( is.na(y) ) ){
-    warning("There are NAs values in the time series", immediate. = TRUE)
+  if ( any( is.na(y) ) ) {
+    stop("There are NAs values in the time series")
   }
   
-  if(any( is.nan(y) )){
-    warning("There are NaNs values in the time series", immediate. = TRUE)
+  if ( any( is.nan(y) )) {
+    stop("There are NaNs values in the time series")
   }
   
   # Default number of threads to be used
   if (is.null(threads)) {
-    cores <- parallel::detectCores()
+    cores <- parallel::detectCores(logical = FALSE)
     threads <- ifelse(cores == 1, cores, cores - 1)
   }
 
@@ -72,13 +72,11 @@ knn_optim_parallel2 <- function(y, k, d, v = 1, init = NULL, distance_metric = "
   )
   
   if ( error_type == 0 ) {
-    error_type <- 3
-    warning(paste0("Error metric '", error_metric, "' unrecognized. Using MAE as default"), immediate. = TRUE)
+    stop(paste0("Error metric '", error_metric, "' unrecognized."))
   }
   
-  if ( ! any( weight == c("proximity", "same", "linear") ) ) {
-    warning(paste0("Weight metric '", weight, "' unrecognized. Using 'proximity' as default"), immediate. = TRUE)
-    weight <- "proximity"
+  if ( all( weight != c("proximity", "same", "linear") ) ) {
+    stop(paste0("Weight metric '", weight, "' unrecognized."))
   }
 
   # Sort k or d vector if they are unsorted
@@ -96,12 +94,15 @@ knn_optim_parallel2 <- function(y, k, d, v = 1, init = NULL, distance_metric = "
   # Initialization of variables to be used
   if ( any(class(y) == "tbl_ts")) {
     require(tsibble)
-    if (length(measured_vars(y)) < v ) {
+    if (length(tsibble::measured_vars(y)) < v ) {
       stop(paste0("Index of variable off limits: v = ", v, " but given time series has ", length(measured_vars(y)), " variables."))
     }
     y <- matrix(sapply( y[ measured_vars(y) ], as.double), ncol = length(measures(y) ) )
   }
   else{
+    if ( NCOL(y) < v ) {
+      stop(paste0("Index of variable off limits: v = ", v, " but given time series has ", NCOL(y), " variables."))
+    }
     y <- matrix(sapply(y, as.numeric), ncol = NCOL(y))
   }
   n <- NROW(y)
@@ -120,8 +121,8 @@ knn_optim_parallel2 <- function(y, k, d, v = 1, init = NULL, distance_metric = "
   # all combinations of instants init to n - 1 and k's values are generated in order to predict values
   # using k-nn algorithm and calculate errors.
 
-  clust <- makeCluster(threads)
-  registerDoParallel(cl = clust)
+  clust <- parallel::makeCluster(threads)
+  doParallel::registerDoParallel(cl = clust)
 
   errors_matrix <- foreach(i = 1:ds, .combine = cbind, .packages = c("forecast", "parallelDist"), .export = "knn_elements") %dopar% {
     predictions <- matrix(nrow = ks, ncol = n - init)
@@ -129,14 +130,13 @@ knn_optim_parallel2 <- function(y, k, d, v = 1, init = NULL, distance_metric = "
 
     # Get 'elements' matrices (one per variable)
     elements_matrices <- plyr::alply(y, 2, function(y_col) knn_elements(matrix(y_col, ncol = 1), d[i]))
-
+    
     # For each of the elements matrices, calculate the distances between 
     # every 'element'. This results in a list of triangular matrices.
     distances_matrices <- plyr::llply(elements_matrices, function(elements_matrix) parallelDist::parDist(elements_matrix, distance_metric, threads = threads))
-
+    
     # Combine all distances matrices by aggregating them
     distances_matrix <- Reduce('+', distances_matrices)
-
     distances_matrix_size <- attr(distances_matrix, "Size")
 
     for (j in (n - init + 1):2) {
@@ -161,8 +161,7 @@ knn_optim_parallel2 <- function(y, k, d, v = 1, init = NULL, distance_metric = "
                           same = rep.int(1, k_value),
                           linear = k_value:1,
                           #expSmooth = expSmoVal ** k_value:1
-                          expSmooth = expSmoVal * (1 - expSmoVal) ** (k_value - 1):0 ,
-                          rep.int(1, k_value)
+                          expSmooth = expSmoVal * (1 - expSmoVal) ** (k_value - 1):0
                         )
 
         # Calculate the predicted value
@@ -173,14 +172,14 @@ knn_optim_parallel2 <- function(y, k, d, v = 1, init = NULL, distance_metric = "
     # Calculate error values between the known values and the predicted values, these values
     # correspond to instants init to n - 1. This is done for the current d and all k's
     for (k_index in 1:ks) {
-      errors[k_index] <- accuracy(ts(predictions[k_index, ]), real_values)[error_type]
+      errors[k_index] <- forecast::accuracy(ts(predictions[k_index, ]), real_values)[error_type]
     }
 
     errors
   }
 
-  registerDoSEQ()
-  stopCluster(clust)
+  foreach::registerDoSEQ()
+  parallel::stopCluster(clust)
 
   # Construction of the list to be returned
   index_min_error <- which.min(errors_matrix)

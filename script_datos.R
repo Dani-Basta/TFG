@@ -1,3 +1,9 @@
+
+# nombres de parámetros y funcionalidades correspondientes
+# 
+# intentar adaptar a tsCV 
+# ver cómo funciona forecast (objetos) e intentar adaptar/integrar
+
 library(zoo)
 library(forecast)
 
@@ -6,12 +12,7 @@ library(forecast)
 #####
 # Load to Enviroment "knn_optim_parallel2" (or the desired version), "knn_past" and "knn_elements"
 
-# source('D:/Daniel/Investigación/R/Desarrollo Knn/knn_optim_parallel2.R')
-# source('D:/Daniel/Investigación/R/Desarrollo Knn/knn_past.R')
-# source('D:/Daniel/Investigación/R/Desarrollo Knn/knn_elements.R')
-
-
-# y <- datasets::nottem
+# y <- nottem
 y <- datasets::sunspot.month
 dates <- as.Date(time(y))
 
@@ -52,14 +53,11 @@ optimal <- c(optimal_train$mean, optimal_test$mean)
 y_err <- ts(y[(train_init + 1):n]) #  tail(y, (n - train_init ))
 y_train_err <-  y[(train_init + 1):test_init] # tail( head(y, test_init), (test_init - train_init)) #
 y_test_err <- y[(test_init + 1):n] #  tail(y, (n - test_init - 1) ) #
-
 sub_dates <- tail(dates, length(y) - train_init)
 # sub_dates <- c(as.Date(time(optimal_train$mean)), as.Date(time(optimal_test$mean))) 
 # sub_dates <- as.Date(time(optimal)) 
-
 naive <- ts(y[train_init:(n - 1)]) # ts(y[train_init:(n - 1)], start = time(y)[train_init + 1], frequency = frequency(y)) #
 # naive_total_error <- accuracy(naive, y_err) [switch(error_metric, ME = 1, RMSE = 2, MAE = 3)]
-
 cont_min <- min(res$errors)
 cont_max <- max(res$errors)
 cont_max_fix <- (cont_max - (cont_max - cont_min) * 0.4)

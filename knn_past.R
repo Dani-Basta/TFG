@@ -29,21 +29,25 @@
 #' @examples
 #' knn_past(AirPassengers, 5, 2)
 #' knn_past(LakeHuron, 3, 6)
-knn_past <- function(y, k, d, v = 1, init = NULL, distance_metric = "euclidean", weight = "proximity", threads = NULL) {
+knn_past <- function(y, k, d, v = 1, init = NULL, distance_metric = "euclidean", weight = "proximity", threads = 1) {
   require(parallelDist)
   require(parallel)
 
-  if (any( is.na(y) ) ){
-    warning("There are NAs values in the time series", immediate. = TRUE)
+  if ( any( is.na(y) ) ) {
+    stop("There are NAs values in the time series")
   }
   
-  if (any( is.nan(y) )){
-    warning("There are NaNs values in the time series", immediate. = TRUE)
+  if ( any( is.nan(y) )) {
+    stop("There are NaNs values in the time series")
+  }
+  
+  if ( all( weight != c("proximity", "same", "linear") ) ) {
+    stop(paste0("Weight metric '", weight, "' unrecognized."))
   }
   
   # Default number of threads to be used
   if (is.null(threads)) {
-    cores <- parallel::detectCores()
+    cores <- parallel::detectCores(logical = FALSE)
     threads <- ifelse(cores == 1, cores, cores - 1)
   }
 
@@ -70,6 +74,11 @@ knn_past <- function(y, k, d, v = 1, init = NULL, distance_metric = "euclidean",
 
   if ( any(class(y) == "ts" ) ) {
     require(tseries)
+    
+    if ( NCOL(y) < v ) {
+      stop(paste0("Index of variable off limits: v = ", v, " but given time series has ", NCOL(y), " variables."))
+    }
+    
     sta <- time(y)[init + 1]
     freq <- frequency(y)
     resType = "ts"
@@ -78,6 +87,10 @@ knn_past <- function(y, k, d, v = 1, init = NULL, distance_metric = "euclidean",
   }
   else if ( any(class(y) == "tbl_ts")) {
     require(tsibble)
+    
+    if (length(tsibble::measured_vars(y)) < v ) {
+      stop(paste0("Index of variable off limits: v = ", v, " but given time series has ", length(measured_vars(y)), " variables."))
+    }
 
     resul <- tail(y, (n - init ) )
     
@@ -86,13 +99,17 @@ knn_past <- function(y, k, d, v = 1, init = NULL, distance_metric = "euclidean",
     resType = "tsibble"
     # y <- matrix(sapply(y$value, as.double), ncol = 1)
     # 
-    # y <- matrix(sapply( y[ measured_vars(y)[v] ], as.double), ncol = 1)
+    # y <- matrix(sapply( y[ tsibble::measured_vars(y)[v] ], as.double), ncol = 1)
     
-    y <- matrix(sapply( y[ measured_vars(y) ], as.double), ncol = length(measures(y) ))
+    y <- matrix(sapply( y[ tsibble::measured_vars(y) ], as.double), ncol = length(measures(y) ))
     
   } 
   else{
     resType = "undef"
+    
+    if ( NCOL(y) < v ) {
+      stop(paste0("Index of variable off limits: v = ", v, " but given time series has ", NCOL(y), " variables."))
+    }
     
     y <- matrix(sapply(y, as.double), ncol = NCOL(y))
   }
@@ -104,14 +121,13 @@ knn_past <- function(y, k, d, v = 1, init = NULL, distance_metric = "euclidean",
   predictions <- array(dim = n - init)
   neighbors <- matrix(nrow = k, ncol = n - init)
   
-
   # Get 'elements' matrices (one per variable)
   elements_matrices <- plyr::alply(y, 2, function(y_col) knn_elements(matrix(y_col, ncol = 1), d))
 
   # For each of the elements matrices, calculate the distances between 
   # every 'element'. This results in a list of triangular matrices.
   distances_matrices <- plyr::llply(elements_matrices, function(elements_matrix) parallelDist::parDist(elements_matrix, distance_metric, threads = threads))
-
+  
   # Combine all distances matrices by aggregating them
   distances_matrix <- Reduce('+', distances_matrices)
   
@@ -143,7 +159,6 @@ knn_past <- function(y, k, d, v = 1, init = NULL, distance_metric = "euclidean",
       predictions[prediction_index] <- weighted.mean(y[n - j + 2 - k_nn, v], weights)
       prediction_index <- prediction_index - 1
   }
-
   if ( resType == "ts")  {
     forec$mean <- ts(predictions, start = sta, frequency = freq )
   }
