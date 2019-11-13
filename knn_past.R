@@ -9,7 +9,7 @@
 #' @param d Length of each of the 'elements'.
 #' @param init Variable that determines the limit of the known past for the first instant predicted.
 #' @param v Variable to be predicted if given multivariate time series.
-#' @param init Variable that determines the limit of the known past for the first instant predicted.
+#' @param init Variable that determines the limit of the known past for the first instant predicted. 
 #' @param distance_metric Type of metric to evaluate the distance between points. Many metrics are supported: euclidean, manhattan,
 #' dynamic time warping, camberra and others. For more information about the supported metrics check the values that 'method'
 #' argument of function parDist (from parallelDist package) can take as this is the function used to calculate the distances.
@@ -32,7 +32,36 @@
 knn_past <- function(y, k, d, v = 1, init = NULL, distance_metric = "euclidean", weight = "proximity", threads = 1) {
   require(parallelDist)
   require(parallel)
+  
+  forec <- list()
+  class(forec) <- "forecast"
+  forec$method <- "k-Nearest Neighbors over known observations"
 
+  if (class(y) == "kNN") {
+    forec$model <- y
+    
+    forec$model$optim_call <- forec$model$call
+    forec$model$call <- NULL
+    
+    k <- y$opt_k
+    d <- y$opt_d
+    distance_metric <- y$distance
+    weight <- y$weight
+    threads <- threads
+    
+    y <- y$x
+  }
+  else {
+    model <- list()
+    class(model) <- "kNN"
+    model$method <- "k-Nearest Neighbors"
+    model$k <- k
+    model$d <- d
+    model$distance <- distance_metric
+    model$weight <- weight
+    forec$model <- model
+  }
+  
   if ( any( is.na(y) ) ) {
     stop("There are NAs values in the time series")
   }
@@ -52,23 +81,8 @@ knn_past <- function(y, k, d, v = 1, init = NULL, distance_metric = "euclidean",
   }
 
   # Initialization of variables to be used
-  
   n <- NROW(y)
   init <- ifelse(is.null(init), init <- floor(n * 0.7), init)
-  
-  model <- list()
-  class(model) <- "kNN"
-  
-  model$method <- "k-Nearest Neighbors"
-  model$k <- k
-  model$d <- d
-  model$distance <- distance_metric
-  model$weight <- weight
-  
-  forec <- list()
-  class(forec) <- "forecast"
-  forec$model <- model
-  forec$method <- "k-Nearest Neighbors over known observations"
   
   forec$x <- y
 

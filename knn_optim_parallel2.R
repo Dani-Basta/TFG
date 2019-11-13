@@ -90,6 +90,7 @@ knn_optim_parallel2 <- function(y, k, d, v = 1, init = NULL, distance_metric = "
   model <- list()
   class(model) <- "kNN"
 
+  model$x <- y
   
   # Initialization of variables to be used
   if ( any(class(y) == "tbl_ts")) {
@@ -105,6 +106,7 @@ knn_optim_parallel2 <- function(y, k, d, v = 1, init = NULL, distance_metric = "
     }
     y <- matrix(sapply(y, as.numeric), ncol = NCOL(y))
   }
+  
   n <- NROW(y)
   ks <- length(k)
   ds <- length(d)
@@ -198,6 +200,7 @@ knn_optim_parallel2 <- function(y, k, d, v = 1, init = NULL, distance_metric = "
   model$distance <- distance_metric
   model$error <- error_metric
   model$weight <- weight
+  model$threads <- threads
   model$call <- deparse(sys.call())
   
   #result

@@ -27,6 +27,38 @@ knn_next <- function(y, k, d, v = 1, distance_metric = "euclidean", weight = "pr
   require(parallelDist)
   require(parallel)
   
+  # Default number of threads to be used
+  if (is.null(threads)) {
+    cores <- parallel::detectCores( logical = FALSE )
+    threads <- ifelse(cores == 1, cores, cores - 1)
+  }
+  
+  forec <- list()
+  class(forec) <- "forecast"
+  forec$method <- "k-Nearest Neighbors for unknown observations"
+  
+  if (class(y) == "kNN") {
+    forec$model <- y
+    
+    k <- y$opt_k
+    d <- y$opt_d
+    distance_metric <- y$distance
+    weight <- y$weight
+    threads <- threads
+    
+    y <- y$x
+  }
+  else {
+    model <- list()
+    class(model) <- "kNN"
+    model$method <- "k-Nearest Neighbors"
+    model$k <- k
+    model$d <- d
+    model$distance <- distance_metric
+    model$weight <- weight
+    forec$model <- model
+  }
+  
   if ( any( is.na(y) ) ) {
     stop("There are NAs values in the time series")
   }
@@ -38,29 +70,11 @@ knn_next <- function(y, k, d, v = 1, distance_metric = "euclidean", weight = "pr
   if ( all( weight != c("proximity", "same", "linear") ) ) {
     stop(paste0("Weight metric '", weight, "' unrecognized."))
   }
-
-  # Default number of threads to be used
-  if (is.null(threads)) {
-    cores <- parallel::detectCores( logical = FALSE )
-    threads <- ifelse(cores == 1, cores, cores - 1)
-  }
-
+  
+  
   # Initialization of variables to be used
   n <- NROW(y)
-  
-  model <- list()
-  class(model) <- "kNN"
-  
-  model$method <- "k-Nearest Neighbors"
-  model$k <- k
-  model$d <- d
-  model$distance <- distance_metric
-  model$weight <- weight
-  
-  forec <- list()
-  class(forec) <- "forecast"
-  forec$model <- model
-  forec$method <- "k-Nearest Neighbors for unknown observations"
+  forec$x <- y
 
   if ( any(class(y) == "ts" ) ) {
     require(tseries)
@@ -101,8 +115,6 @@ knn_next <- function(y, k, d, v = 1, distance_metric = "euclidean", weight = "pr
     
     y <- matrix(sapply(y, as.double), ncol = NCOL(y))
   }
-  
-  forec$x <- y
   
   # y <- matrix(sapply(y, as.numeric), ncol = NCOL(y), byrow = FALSE)
   
