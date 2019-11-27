@@ -128,26 +128,28 @@ knn_past <- function(y, k, d, initial = NULL, distance = "euclidean", weight = "
   neighbors <- matrix(nrow = k, ncol = n - initial)
   
   # Get 'elements' matrices (one per variable)
-  elements_matrices <- plyr::alply(y, 2, function(y_col) knn_elements(matrix(y_col, ncol = 1), d))
+  distances <- plyr::alply(y, 2, function(y_col) knn_elements(matrix(y_col, ncol = 1), d))
 
   # For each of the elements matrices, calculate the distances between 
   # every 'element'. This results in a list of triangular matrices.
-  distances_matrices <- plyr::llply(elements_matrices, function(elements_matrix) parallelDist::parDist(elements_matrix, distance, threads = threads))
+  distances <- plyr::llply(distances, function(elements_matrix) parallelDist::parDist(elements_matrix, distance, threads = threads))
   
   # Combine all distances matrices by aggregating them
-  distances_matrix <- Reduce('+', distances_matrices)
+  distances <- Reduce('+', distances)
   
-  distances_size <- attr(distances_matrix, "Size")
+  distances_size <- attr(distances, "Size")
 
   prediction_index <- length(predictions)
   for (j in 2:(n - initial + 1)) {
       # Get column needed from the distances matrix
       initial_index <- distances_size * (j - 1) - j * (j - 1) / 2 + 1
-      distances_col <- distances_matrix[initial_index:(initial_index + n - d - j)]
+      distances_col <- distances[initial_index:(initial_index + n - d - j)]
 
       # Get the indexes of the k nearest 'elements', these are called neighbors
-      k_nn <- head((sort.int(distances_col, index.return = TRUE))$ix, k)
-      neighbors[,prediction_index] <- k_nn
+      k_nn <- which( distances_col <= sort.int(distances_col, partial = k)[k], arr.ind = TRUE)
+      k_nn <- head(k_nn[sort.int(distances_col[k_nn], index.return = TRUE, decreasing = FALSE)$ix], k)
+
+      # neighbors[,prediction_index] <- k_nn
 
       # Calculate the weights for the future computation of the weighted mean
       weights <- switch(weight, 
@@ -157,6 +159,7 @@ knn_past <- function(y, k, d, initial = NULL, distance = "euclidean", weight = "
                     )
 
       # Calculate the predicted value
+      neighbors[,prediction_index] <- (n - j + 2 - k_nn) - 1
       predictions[prediction_index] <- weighted.mean(y[n - j + 2 - k_nn, v], weights)
       prediction_index <- prediction_index - 1
   }

@@ -29,12 +29,6 @@ knn_forecast <- function(y, k, d, distance = "euclidean", weight = "proportional
   require(parallelDist)
   require(parallel)
   
-  
-  
-  ####################EXPLICAR QUE H ESTÁ POR COMPATIBILIDAD
-  
-  
-  
   # Default number of threads to be used
   if (is.null(threads)) {
     cores <- parallel::detectCores( logical = FALSE )
@@ -121,21 +115,21 @@ knn_forecast <- function(y, k, d, distance = "euclidean", weight = "proportional
   }
   
   # Get 'elements' matrices (one per variable)
-  elements_matrices <- plyr::alply(y, 2, function(y_col) knn_elements(matrix(y_col, ncol = 1), d))
+  distances <- plyr::alply(y, 2, function(y_col) knn_elements(matrix(y_col, ncol = 1), d))
 
   # For each of the elements matrices, obtain the distances between 
   # the most recent 'element' and the rest of the 'elements'.
   # This results in a list of distances vectors
-  distances_vectors <- plyr::llply(elements_matrices, function(elements_matrix) parallelDist::parDist(elements_matrix, distance, threads = threads)[1:(n - d)])
+  distances <- plyr::llply(distances, function(elements_matrix) parallelDist::parDist(elements_matrix, distance, threads = threads)[1:(n - d)])
   
   # Combine all distances vectors by aggregating them
-  distances <- Reduce('+', distances_vectors)
+  distances <- Reduce('+', distances)
 
   # Get the indexes of the k nearest 'elements', these are called neighbors
-  k_nn <- head((sort.int(distances, index.return = TRUE))$ix, k)
+  k_nn <- which( distances <= sort.int(distances, partial = k)[k], arr.ind = TRUE)
   
-  forec$neighbors <- k_nn
-
+  k_nn <- head(k_nn[sort.int(distances[k_nn], index.return = TRUE, decreasing = FALSE)$ix], k)
+  
   # Calculate the weights for the future computation of the weighted mean
   weights <- switch(weight, 
                     proportional = 1 / (distances[k_nn] + .Machine$double.xmin * 1e150),
@@ -144,6 +138,7 @@ knn_forecast <- function(y, k, d, distance = "euclidean", weight = "proportional
                 )
 
   # Calculate the predicted value
+  forec$neighbors <- n - k_nn
   prediction <- weighted.mean(y[n - k_nn + 1, v], weights)
   
   if ( resType == "ts" )  {
@@ -162,6 +157,8 @@ knn_forecast <- function(y, k, d, distance = "euclidean", weight = "proportional
   forec$upper <- NA
   
   forec$residuals <- tail(y[,v], 1) - prediction
+  
+  forec$distances <- rev(distances)
   
   forec
   

@@ -133,27 +133,29 @@ knn_param_search <- function(y, k, d, initial = NULL, distance = "euclidean", er
     errors <- vector(mode = "numeric", ks)
 
     # Get 'elements' matrices (one per variable)
-    elements_matrices <- plyr::alply(y, 2, function(y_col) knn_elements(matrix(y_col, ncol = 1), d[i]))
+    distances <- plyr::alply(y, 2, function(y_col) knn_elements(matrix(y_col, ncol = 1), d[i]))
     
     # For each of the elements matrices, calculate the distances between 
     # every 'element'. This results in a list of triangular matrices.
-    distances_matrices <- plyr::llply(elements_matrices, function(elements_matrix) parallelDist::parDist(elements_matrix, distance, threads = threads))
+    distances <- plyr::llply(distances, function(distances) parallelDist::parDist(distances, distance, threads = threads))
     
     # Combine all distances matrices by aggregating them
-    distances_matrix <- Reduce('+', distances_matrices)
-    distances_matrix_size <- attr(distances_matrix, "Size")
+    distances <- Reduce('+', distances)
+    distances_size <- attr(distances, "Size")
 
     for (j in (n - initial + 1):2) {
       # Get column needed from the distances matrix and sort it
-      initial_index <- distances_matrix_size * (j - 1) - j * (j - 1) / 2 + 1
-      distances_col <- distances_matrix[ initial_index:(initial_index + n - d[i] - j) ]
-      sorted_distances_col <- sort.int(distances_col, index.return = TRUE)
+      initial_index <- distances_size * (j - 1) - j * (j - 1) / 2 + 1
+      distances_col <- distances[ initial_index:(initial_index + n - d[i] - j) ]
+      # sorted_dists <- sort.int(distances_col, index.return = TRUE)
+      sorted_dists <- which( distances_col <= sort.int(distances_col, partial = max(k))[max(k)], arr.ind = TRUE)
+      sorted_dists <- head(sorted_dists[sort.int(distances_col[sorted_dists], index.return = TRUE, decreasing = FALSE)$ix], max(k))
 
       for (k_index in 1:ks) {
         k_value <- k[k_index]
 
         # Get the indexes of the k nearest 'elements', these are called neighbors
-        k_nn <- head(sorted_distances_col$ix, k_value)
+        k_nn <- head(sorted_dists, k_value)
 
         # Calculate the weights for the future computation of the weighted mean
         weights <- switch(weight,
