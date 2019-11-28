@@ -57,7 +57,7 @@ pMain <- layout(pMain, xaxis = list(range = list( dates[1], dates[length(dates)]
 pMainBase <- pMain
 
 
-pMain <- add_trace(pMain, x = sub_dates, y = optimal, legendgroup = "optim", 
+pMain <- add_trace(pMain, x = sub_dates, y = optimal$mean, legendgroup = "optim", 
                    name = paste0("Optimal (k = ", res$opt_k, ", d = ", res$opt_d, ")"), line = list(color = colPalette[2]))
 
 #Errors
@@ -74,15 +74,15 @@ combPlotMain <- subplot(pMain, pErrMain, nrows = 2, shareX = TRUE )
 #                               Plots for optimization tab
 pOpt <- plot_ly(x = dates, y = y, type = "scatter",  name = "Observed Time Series", 
                 mode = "lines", legendgroup = "real", hoverinfo = "x+y", line = list(color = colPalette[1]))
-pOpt <- add_trace(pOpt, x = sub_dates, y = optimal, legendgroup = "optim", 
+pOpt <- add_trace(pOpt, x = sub_dates, y = optimal$mean, legendgroup = "optim", 
                   name = paste0("Optimal (k = ", res$opt_k, ", d = ", res$opt_d, ")"), line = list(color = colPalette[2]))
 
-# pOpt <- add_segments(pOpt, x = dates[train_init], xend = dates[train_init], y = min_y - 0.05 * (max_y - min_y), 
-#                      yend = max_y + 0.05 * (max_y - min_y), name = "Train", showlegend = FALSE, text = "Train", 
-#                      hoverinfo = "text", legendgroup = "lines", line = list(color = "gray", width = 1.5, dash = "dash"))
-# pOpt <- add_segments(pOpt, x = dates[test_init], xend = dates[test_init], y = min_y - 0.05 * (max_y - min_y), 
-#                      yend = max_y + 0.05 * (max_y - min_y), name = "Test", showlegend = FALSE, text = "Test", 
-#                      hoverinfo = "text", legendgroup = "lines", line = list(color = "gray", width = 1.5, dash = "dash"))
+pOpt <- add_segments(pOpt, x = dates[train_init], xend = dates[train_init], y = min_y - 0.05 * (max_y - min_y), 
+                     yend = max_y + 0.05 * (max_y - min_y), name = "Train", showlegend = FALSE, text = "Train", 
+                     hoverinfo = "text", legendgroup = "lines", line = list(color = "gray", width = 1.5, dash = "dash"))
+pOpt <- add_segments(pOpt, x = dates[test_init], xend = dates[test_init], y = min_y - 0.05 * (max_y - min_y), 
+                     yend = max_y + 0.05 * (max_y - min_y), name = "Test", showlegend = FALSE, text = "Test", 
+                     hoverinfo = "text", legendgroup = "lines", line = list(color = "gray", width = 1.5, dash = "dash"))
 pOpt <- layout(pOpt, xaxis = list(rangeslider = list(visible = TRUE)))
 
 pOptBase <- pOpt

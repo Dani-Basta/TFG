@@ -78,7 +78,7 @@ knn_param_search <- function(y, k, d, initial = NULL, distance = "euclidean", er
     stop(paste0("Weight metric '", weight, "' unrecognized."))
   }
 
-  # Sort k or d vector if they are unsorted
+  # Sort k or d vectors if they are unsorted
   if (is.unsorted(k)) {
       k <- sort(k)
   }
@@ -147,8 +147,10 @@ knn_param_search <- function(y, k, d, initial = NULL, distance = "euclidean", er
       # Get column needed from the distances matrix and sort it
       initial_index <- distances_size * (j - 1) - j * (j - 1) / 2 + 1
       distances_col <- distances[ initial_index:(initial_index + n - d[i] - j) ]
-      # sorted_dists <- sort.int(distances_col, index.return = TRUE)
+      
+      # Get the indexes of the k nearest 'elements', these are called neighbors
       sorted_dists <- which( distances_col <= sort.int(distances_col, partial = max(k))[max(k)], arr.ind = TRUE)
+      # We sort them so the closer neighbor is at the first position
       sorted_dists <- head(sorted_dists[sort.int(distances_col[sorted_dists], index.return = TRUE, decreasing = FALSE)$ix], max(k))
 
       for (k_index in 1:ks) {

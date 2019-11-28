@@ -127,7 +127,7 @@ knn_forecast <- function(y, k, d, distance = "euclidean", weight = "proportional
 
   # Get the indexes of the k nearest 'elements', these are called neighbors
   k_nn <- which( distances <= sort.int(distances, partial = k)[k], arr.ind = TRUE)
-  
+  # We sort them so the closer neighbor is at the first position
   k_nn <- head(k_nn[sort.int(distances[k_nn], index.return = TRUE, decreasing = FALSE)$ix], k)
   
   # Calculate the weights for the future computation of the weighted mean
@@ -145,7 +145,6 @@ knn_forecast <- function(y, k, d, distance = "euclidean", weight = "proportional
     forec$mean <- tail(ts(c(1, prediction), start = sta, frequency = freq ), 1)
   }
   else if ( resType == "tsibble" ) {
-    # resul$value <- prediction
     resul[ measured_vars(resul)[v] ] <- prediction
     forec$mean <- resul
   } 

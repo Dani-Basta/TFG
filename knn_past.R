@@ -147,9 +147,8 @@ knn_past <- function(y, k, d, initial = NULL, distance = "euclidean", weight = "
 
       # Get the indexes of the k nearest 'elements', these are called neighbors
       k_nn <- which( distances_col <= sort.int(distances_col, partial = k)[k], arr.ind = TRUE)
+      # We sort them so the closer neighbor is at the first position
       k_nn <- head(k_nn[sort.int(distances_col[k_nn], index.return = TRUE, decreasing = FALSE)$ix], k)
-
-      # neighbors[,prediction_index] <- k_nn
 
       # Calculate the weights for the future computation of the weighted mean
       weights <- switch(weight, 
@@ -157,10 +156,11 @@ knn_past <- function(y, k, d, initial = NULL, distance = "euclidean", weight = "
                         average = rep.int(1, k),
                         linear = k:1
                     )
-
+      
+      neighbors[,prediction_index] <- (n + 2 - j - k_nn) - 1 
+      
       # Calculate the predicted value
-      neighbors[,prediction_index] <- (n - j + 2 - k_nn) - 1
-      predictions[prediction_index] <- weighted.mean(y[n - j + 2 - k_nn, v], weights)
+      predictions[prediction_index] <- weighted.mean(y[n + 2 - j - k_nn, v], weights)
       prediction_index <- prediction_index - 1
   }
   if ( resType == "ts")  {

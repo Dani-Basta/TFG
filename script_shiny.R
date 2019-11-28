@@ -20,7 +20,7 @@ server <- function(input, output, session) {
              (input$selDtabDist == res$opt_d || input$selDtabDist == "") ) {
             
             # Parámetros de combinación óptima
-            pMain <<- add_trace(pMain, x = sub_dates, y = optimal, line = list(color = colPalette[2]), 
+            pMain <<- add_trace(pMain, x = sub_dates, y = optimal$mean, line = list(color = colPalette[2]), 
                                name = paste0("Optimal (k = ", res$opt_k, ", d = ", res$opt_d, ")"), legendgroup = "optim")
             
             errors <- residuals_matrix[1, ]
@@ -44,12 +44,12 @@ server <- function(input, output, session) {
                 err_high <- max(errors) + 0.05 * (max(errors) - min(errors))
             }
         }
-        else{
+        else {
             actK <- ifelse(input$selKtabDist == "", res$opt_k, as.numeric(input$selKtabDist))
             actD <- ifelse(input$selDtabDist == "", res$opt_d, as.numeric(input$selDtabDist))
             
-            preds <- knn_past(y = y, k = actK, d = actD, init = train_init, distance_metric = distance, 
-                              weight = weight, threads = n_threads)
+            preds <- knn_past(y = y, k = actK, d = actD, initial = train_init, distance = distance, 
+                              weight = weight, threads = n_threads)$mean
             
             # Gráfico de predicciones 
             pMain <<- add_trace(pMain, x = sub_dates, y = preds, name = paste0("k = " , actK, ", d = " , actD, " prediction"), 
@@ -84,21 +84,15 @@ server <- function(input, output, session) {
             # print(paste0("Se ha encontrado en ", x_click, " que corresponde a ", dates[x_click] ))
             # y_click <- click[[4]]
             
-            # distances <- parDist( knn_elements(matrix(y, ncol = NCOL(y)), d = res$opt_d), method = distance, threads = n_threads)
-            # # print(paste0("El tamaño de distancias es ", attr(distances, "Size"), " y se va a solicitar el ", x_click + 1 - res$opt_d))
-            # distances <- rev(distances[distColIndex(attr(distances, "Size"), x_click + 1 - res$opt_d)])
-            # print(paste0("Se van a comparar ", length(distances), " distancias en el grafico") )
-            
-            distances <- rev(cdist( matrix(y[ (x_click + 1 - actD):x_click], nrow = 1), 
-                                    knn_elements(matrix( y[1:(x_click - 1)], ncol = NCOL(y)), d = actD) ))
-            
             pMain <<- add_segments(pMain, x = click[[3]], xend = click[[3]], y = y_low, yend = y_high, 
                                   name = "Knn", showlegend = FALSE, hoverinfo = "x", # text = "Knn",  
                                   legendgroup = "knn", line = list(color = "blue", width = 1.5, dash = "dash"))
             
-            pError <<- add_segments(pError, x = dates[x_click+1], xend = dates[x_click+1], y = err_low, yend = err_high, 
+            if ( x_click < n ) {
+                pError <<- add_segments(pError, x = full_dates[x_click+1], xend = full_dates[x_click+1], y = err_low, yend = err_high, 
                                    name = "Knn", showlegend = FALSE, hoverinfo = "text", type = "line", mode = "line",  
                                    legendgroup = "knn", line = list(color = "blue", width = 1.5, dash = "dash"), text = "Prediction error \n for selected")
+            }
             
             ind <- 1
             # shapes <- pMainShapes
@@ -107,7 +101,15 @@ server <- function(input, output, session) {
             shapesInd <- length(pMain[["x"]][["layoutAttrs"]][[ pMain[["x"]][["cur_data"]] ]][["shapes"]]) + 1
             
             
-            for (i in (head( sort.int(distances, index.return = TRUE)$ix , actK) + (actD - 1) ) )  {
+            # distances <- parDist( knn_elements(matrix(y, ncol = NCOL(y)), d = res$opt_d), method = distance, threads = n_threads)
+            # # print(paste0("El tamaño de distancias es ", attr(distances, "Size"), " y se va a solicitar el ", x_click + 1 - res$opt_d))
+            # distances <- rev(distances[distColIndex(attr(distances, "Size"), x_click + 1 - res$opt_d)])
+            # print(paste0("Se van a comparar ", length(distances), " distancias en el grafico") )
+            neighbors <- knn_forecast(y = head(y, x_click), k = actK, d = actD, distance = distance, 
+                                 weight = weight, threads = n_threads)$neighbors
+            # distances <- pred$distances 
+            
+            for (i in neighbors)  {
                 pMain <<- add_segments(pMain, x = dates[i], xend = dates[i], y = y_low, yend = y_high, name = "Knn",
                                        showlegend = FALSE, text = paste0(ind, "-nearest"), hoverinfo = "x+text",
                                        legendgroup = "knn", line = list(color = "red", width = 1.5, dash = "dash"))
@@ -145,17 +147,12 @@ server <- function(input, output, session) {
             # print("Procesando click en main")
             # print(click)
             x_click <- match(as.Date(click[[3]]), dates)
+
             # print(paste0("Se ha encontrado en ", x_click, " que corresponde a ", dates[x_click] ))
             # y_click <- click[[4]]
             
             actK <- ifelse(input$selKtabDist == "", res$opt_k, as.numeric(input$selKtabDist))
             actD <- ifelse(input$selDtabDist == "", res$opt_d, as.numeric(input$selDtabDist))
-            
-            # distances <- parDist( knn_elements(matrix(y, ncol = NCOL(y)), d = res$opt_d), method = distance, threads = n_threads)
-            # # print(paste0("El tamaño de distancias es ", attr(distances, "Size"), " y se va a solicitar el ", x_click + 1 - res$opt_d))
-            # distances <- distances[distColIndex(attr(distances, "Size"), x_click + 1 - res$opt_d)]
-            
-            distances <- knn_elements(matrix( y[1:(x_click - 1)], ncol = NCOL(y)), d = actD)
             
             # pKNN <- plot_ly(type = "scatter",  mode = "lines", showlegend = FALSE) %>% 
             # add_trace(x = dates[(x_click + 1 - res$opt_d):x_click], y = y[(x_click + 1 - res$opt_d):x_click], line = list(color = colPalette[1]))
@@ -164,39 +161,68 @@ server <- function(input, output, session) {
                 add_trace(x = (-(actD - 1)):0, y = y[(x_click + 1 - actD):x_click], line = list(color = colPalette[1], width = 5), 
                           name = paste0("Observed (", dates[x_click], ")"), marker = list(color = colPalette[1], size = 7), hoverinfo = "text+y", legendgroup = "Observed",
                           text = paste0("Observed, \n", format(dates[(x_click + 1 - actD):x_click], format = "%B %Y")) ) %>%
-                add_trace(x = 0:1, y = y[x_click:(x_click + 1)], line = list(color = colPalette[1], width = 5, dash = "dash"), 
-                          name = "Observed", marker = list(color = colPalette[1], size = 7), hoverinfo = "text+y", legendgroup = "Observed",
-                          text = paste0("Observed, \n", format(dates[x_click:(x_click + 1)], format = "%B %Y")), showlegend = FALSE) %>%
-                          # text = paste0("Observed, \n", dates[x_click:(x_click+1)]), showlegend = FALSE) %>%
                 layout(title = list(text = paste0(actK, "-nearest neighboors"), font = list(size = 15) ), 
                        xaxis = list(zerolinecolor = "blue", zerolinewidth = 2) )
             
-            distances <- rev( cdist( matrix(y[ (x_click + 1 - actD):x_click], nrow = 1), distances) )
+            if ( x_click < n ) {
+                pKNN <- add_trace(pKNN, x = 0:1, y = y[x_click:(x_click + 1)], line = list(color = colPalette[1], width = 5, dash = "dash"), 
+                          name = "Observed", marker = list(color = colPalette[1], size = 7), hoverinfo = "text+y", legendgroup = "Observed",
+                          text = paste0("Observed, \n", format(dates[x_click:(x_click + 1)], format = "%B %Y")), showlegend = FALSE)
+                          # text = paste0("Observed, \n", dates[x_click:(x_click+1)]), showlegend = FALSE) 
+            }
             
-            pKNN <- add_trace(pKNN, x = 1, y = knnp::knn_next(y = y[1:x_click], k = actK, d = actD, 
-                                                              distance_metric = distance, weight = weight, threads = n_threads), 
-                              name = paste0("Prediction (", dates[(x_click + 1)], ")"), legendgroup = "Prediction", mode = "marker", hoverinfo = "text+y",
-                              marker = list(color = colPalette[2], size = 8), text = paste0("Prediction for ", dates[(x_click + 1)]) )
+            pKNN <- add_trace(pKNN, x = 1, y = knn_forecast(y = head(y, x_click), k = actK, d = actD, 
+                                                            distance = distance, weight = weight, threads = n_threads)$mean, 
+                        name = paste0("Prediction (", full_dates[(x_click + 1)], ")"), legendgroup = "Prediction", mode = "marker", hoverinfo = "text+y",
+                        marker = list(color = colPalette[2], size = 8), text = paste0("Prediction for ", full_dates[(x_click + 1)]) )
+            
+            
+            # distances <- parDist( knn_elements(matrix(y, ncol = NCOL(y)), d = res$opt_d), method = distance, threads = n_threads)
+            # # print(paste0("El tamaño de distancias es ", attr(distances, "Size"), " y se va a solicitar el ", x_click + 1 - res$opt_d))
+            # distances <- distances[distColIndex(attr(distances, "Size"), x_click + 1 - res$opt_d)]
             
             ind <- 1
             
             redDecr   <- (250 - 150) / (actK - 1)
             transDecr <- (0.9 - 0.2) / (actK - 1)
             
-            for (i in head( sort.int(distances, index.return = TRUE)$ix , actK) ) {
-                # pKNN <- add_trace(pKNN, x = dates[(i + 1 - res$opt_d):i], y = y[(i + 1 - res$opt_d):i], line = list(color = "random") )
-                pKNN <- add_trace(pKNN, x = (-(actD - 1)):0, y = y[i:(i - 1 + actD)], name = paste0(ind,"-NN (", dates[(i - 1 + actD)], ")" ), legendgroup = paste0(ind,"-NN"),
-                                  line = list(color = paste0("rgba(", 250 - (ind-1)*redDecr, ",40,40," , 0.9 - (ind-1)*transDecr ), width = ifelse(ind>actK/2, 3, 4)),
+            if (actK == res$opt_k && actD == res$opt_d && x_click+1 >= train_init && x_click < n) {
+                print(x_click-train_init)
+                print(dates[x_click])
+                for (i in optimal$neighbors[,(x_click+1-train_init)] ) {
+                    pKNN <- add_trace(pKNN, x = (-(actD - 1)):0, y = y[(i + 1 - actD):i], name = paste0(ind,"-NN (", dates[(i)], ")" ), legendgroup = paste0(ind,"-NN"),
+                                      line = list(color = paste0("rgba(", 250 - (ind-1)*redDecr, ",40,40," , 0.9 - (ind-1)*transDecr ), width = ifelse(ind>actK/2, 3, 4)),
+                                      marker = list(color = paste0("rgba(", 250 - (ind-1)*redDecr, ",40,40," , 0.9 - (ind-1)*transDecr ), size = ifelse(ind>actK/2, 5, 6)),
+                                      text = paste0(ind,"-nearest, \n", format(dates[(i + 1 - actD):i], format = "%B %Y")), hoverinfo = "text+y") %>%
+                        add_trace(pKNN, x = 0:1, y = y[i:(i+1)], showlegend = FALSE, name = paste0(ind,"-NN (", dates[(i)], ")" ),legendgroup = paste0(ind,"-NN"),
+                                  line = list(color = paste0("rgba(", 250 - (ind-1)*redDecr, ",40,40," , 0.9 - (ind-1)*transDecr ), width = ifelse(ind>actK/2, 3, 4), dash = "dash"),
                                   marker = list(color = paste0("rgba(", 250 - (ind-1)*redDecr, ",40,40," , 0.9 - (ind-1)*transDecr ), size = ifelse(ind>actK/2, 5, 6)),
-                                  text = paste0(ind,"-nearest, \n", format(dates[i:(i - 1 + actD)], format = "%B %Y")), hoverinfo = "text+y") %>%
-                    add_trace(pKNN, x = 0:1, y = y[(i - 1 + actD):(i + actD)], showlegend = FALSE, name = paste0(ind,"-NN (", dates[(i - 1 + actD)], ")" ),legendgroup = paste0(ind,"-NN"),
-                              line = list(color = paste0("rgba(", 250 - (ind-1)*redDecr, ",40,40," , 0.9 - (ind-1)*transDecr ), width = ifelse(ind>actK/2, 3, 4), dash = "dash"),
-                              marker = list(color = paste0("rgba(", 250 - (ind-1)*redDecr, ",40,40," , 0.9 - (ind-1)*transDecr ), size = ifelse(ind>actK/2, 5, 6)),
-                              text = paste0(ind,"-nearest, \n", format(dates[(i - 1 + actD):(i + actD)], format = "%B %Y")), hoverinfo = "text+y")
-                
-                ind <- ind + 1
+                                  text = paste0(ind,"-nearest, \n", format(dates[(i):(i + 1)], format = "%B %Y")), hoverinfo = "text+y")
+                    
+                    ind <- ind + 1
+                }
             }
-            
+            else {
+                # distances <- knn_elements(matrix( y[1:(x_click - 1)], ncol = NCOL(y)), d = actD)
+                # distances <- rev( cdist( matrix(y[ (x_click + 1 - actD):x_click], nrow = 1), distances) )
+                
+                neighbors <- knn_forecast(y = head(y, x_click), k = actK, d = actD, distance = distance, 
+                                          weight = weight, threads = n_threads)$neighbors
+                
+                for (i in neighbors ) {
+                    # pKNN <- add_trace(pKNN, x = dates[(i + 1 - res$opt_d):i], y = y[(i + 1 - res$opt_d):i], line = list(color = "random") )
+                    pKNN <- add_trace(pKNN, x = (-(actD - 1)):0, y = y[(i + 1 - actD):i], name = paste0(ind,"-NN (", dates[(i)], ")" ), legendgroup = paste0(ind,"-NN"),
+                                      line = list(color = paste0("rgba(", 250 - (ind-1)*redDecr, ",40,40," , 0.9 - (ind-1)*transDecr ), width = ifelse(ind>actK/2, 3, 4)),
+                                      marker = list(color = paste0("rgba(", 250 - (ind-1)*redDecr, ",40,40," , 0.9 - (ind-1)*transDecr ), size = ifelse(ind>actK/2, 5, 6)),
+                                      text = paste0(ind,"-nearest, \n", format(dates[(i + 1 - actD):i], format = "%B %Y")), hoverinfo = "text+y") %>%
+                        add_trace(pKNN, x = 0:1, y = y[(i):(i + 1)], showlegend = FALSE, name = paste0(ind,"-NN (", dates[(i)], ")" ),legendgroup = paste0(ind,"-NN"),
+                                  line = list(color = paste0("rgba(", 250 - (ind-1)*redDecr, ",40,40," , 0.9 - (ind-1)*transDecr ), width = ifelse(ind>actK/2, 3, 4), dash = "dash"),
+                                  marker = list(color = paste0("rgba(", 250 - (ind-1)*redDecr, ",40,40," , 0.9 - (ind-1)*transDecr ), size = ifelse(ind>actK/2, 5, 6)),
+                                  text = paste0(ind,"-nearest, \n", format(dates[(i):(i+1)], format = "%B %Y")), hoverinfo = "text+y")
+                    
+                    ind <- ind + 1
+                }
+            }
             
             
             pKNN
@@ -225,7 +251,7 @@ server <- function(input, output, session) {
             # # print(paste0("El tamaño de distancias es ", attr(distances, "Size"), " y se va a solicitar el ", x_click + 1 - res$opt_d))
             # distances <- distances[distColIndex(attr(distances, "Size"), x_click + 1 - res$opt_d)]
             
-            distances <- knn_elements(matrix( y[1:(x_click - 1)], ncol = NCOL(y)), d = actD)
+            # distances <- knn_elements(matrix( y[1:(x_click - 1)], ncol = NCOL(y)), d = actD)
             
             # pKNN <- plot_ly(type = "scatter",  mode = "lines", showlegend = FALSE) %>% 
             # add_trace(x = dates[(x_click + 1 - res$opt_d):x_click], y = y[(x_click + 1 - res$opt_d):x_click], line = list(color = colPalette[1]))
@@ -234,7 +260,7 @@ server <- function(input, output, session) {
             #     add_trace(x = (-(actD - 1)):0, y = y[(x_click + 1 - actD):x_click], line = list(color = colPalette[1], width = 5), 
             #                text = paste0("Observed, \n", format(dates[(x_click + 1 - actD):x_click], format = "%B %Y")), hoverinfo = "text+y")
             
-            distances <- rev( cdist( matrix(y[ (x_click + 1 - actD):x_click], nrow = 1), distances) )
+            # distances <- rev( cdist( matrix(y[ (x_click + 1 - actD):x_click], nrow = 1), distances) )
             
             # colores <- rep("royalblue", length(distances))
             #colores[ head( sort.int(distances, index.return = TRUE)$ix , res$opt_k) ] <- "red"
@@ -248,19 +274,23 @@ server <- function(input, output, session) {
             #     ind <- ind + 1
             # }
             
-            distColors <- c("darkcyan", "lightskyblue", "lightcyan")
+            # distColors <- c("darkcyan", "lightskyblue", "lightcyan")
             
             # distances <- (max(distances)*1.1) - distances
             
             # distances <- 1 - ((distances-(min(distances))) / (max(distances) - min(distances)))
             
             # distances <-  min(distances) / distances
-
-            distances <-  distances / min(distances)
-
-            distColors <- c("darkcyan", "lightskyblue", "lightcyan")
             
-            pDists <<- plot_ly(x = tail(head(dates, length(distances) + actD - 1), length(distances)), y = distances, name  = "Knn distances", 
+            
+            distances <- knn_forecast(y = head(y, x_click), k = actK, d = actD, distance = distance, 
+                                      weight = weight, threads = n_threads)$distances
+
+            distances <- min(distances) / distances
+
+            distColors <- rev(c("darkcyan", "lightskyblue", "lightcyan"))
+            # x = tail(head(dates, length(distances) + actD - 1), length(distances))
+            pDists <<- plot_ly(x = window(dates, start = actD, end = x_click-1), y = distances, name  = "Knn distances", 
                               showlegend = FALSE, hoverinfo = "x+y", type = "bar", color = distances, colors = distColors) %>%
                     layout(xaxis = list( range = list(dates[ (actD)], dates[(actD + length(distances) - 1)]), 
                                         rangeslider = list( range = list(dates[ (actD)], dates[(actD + length(distances) - 1)]) ) ) )
@@ -697,9 +727,9 @@ server <- function(input, output, session) {
                             i <- ks[i_ind]
                             j <- ds[j_ind]
                             # print(paste0("Se va a pintar la grafica para k=", i, " d=", j))
-                            preds <- knn_past(y = y, k = i, d = j, init = train_init, distance_metric = distance, 
+                            preds <- knn_past(y = y, k = i, d = j, initial = train_init, distance = distance, 
                                               weight = weight, threads = n_threads)
-                            preds <- as.vector(preds$mean)
+                            preds <- as.vector(preds)
                             
                             # Gráfico de predicciones 
                             pOpt <<- add_trace(pOpt, x = sub_dates, y = preds, name = paste0("k = " , i, ", d = " , j, " prediction"), 
@@ -775,31 +805,7 @@ server <- function(input, output, session) {
             # selected_points <<- selected_points_aux
             
             # print( paste0("k=", k, " d=", d, " esta a ", selected_points[k, d], " en tabla") )
-            
-            # same_click <- TRUE
-            if ( exists("last_click") ) {
-                same_click <- k == last_click[1]
-                same_click <- ifelse(d == last_click[2], same_click, FALSE)
-                same_click <- ifelse( is.null(click[["z"]]) == last_click[3], same_click, FALSE)
-                same_click <- ifelse( click[["curveNumber"]] == last_click[4], same_click, FALSE)
-                # same_click <- ifelse( click[["pointNumber"]] == last_click[5], same_click, FALSE)
-            }
-            else {
-                last_click <<- NULL
-                same_click <- FALSE 
-            }
-            
-            if ( !same_click && (x_minims[1] != k || y_minims[1] != d) ) {
-                selected_points[k, d] <<- !selected_points[k, d]
-            }
-            
-            last_click[1] <<- k
-            last_click[2] <<- d
-            last_click[3] <<- is.null(click[["z"]])
-            
-            last_click[4] <<- click[["curveNumber"]]
-            # last_click[5] <<- click[["pointNumber"]]
-        }
+        } 
         
         # if (input$contourType != previous_countour) {
         #     # selected_points <<- selected_points_aux
@@ -833,7 +839,7 @@ server <- function(input, output, session) {
                     i <- ks[i_ind]
                     j <- ds[j_ind]
                     names_col_local <- c(names_col_local, paste0("k = " , i, ", d = " , j))
-                    preds <- knn_past(y = y, k = i, d = j, init = train_init, distance_metric = distance, 
+                    preds <- knn_past(y = y, k = i, d = j, initial = train_init, distance = distance, 
                                       weight = weight, threads = n_threads)
                     train_error <- accuracy(ts(preds[1:length(y_train_err)]), y_train_err)
                     test_error <- accuracy(ts(preds[(length(y_train_err) + 1):length(preds)]), y_test_err)
@@ -857,7 +863,6 @@ server <- function(input, output, session) {
 } 
 
 ui <- navbarPage("",
-                 
                  tabPanel("Distances",
                           # fluidPage(
                           headerPanel("Distances between elements"),
@@ -929,7 +934,7 @@ ui <- navbarPage("",
                  
                  
                  tabPanel("Optimization",
-                          headerPanel(HTML(paste0("Errors for each <em>k</em> and <em>d</em> (", error_metric, " error)"))),
+                          headerPanel(HTML(paste0("Errors for each <em>k</em> and <em>d</em> (", error_measure, " error)"))),
                           mainPanel( width = 10,
                               plotlyOutput("contourPlot")
                           ),
