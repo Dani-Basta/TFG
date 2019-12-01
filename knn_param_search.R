@@ -137,7 +137,7 @@ knn_param_search <- function(y, k, d, initial = NULL, distance = "euclidean", er
     
     # For each of the elements matrices, calculate the distances between 
     # every 'element'. This results in a list of triangular matrices.
-    distances <- plyr::llply(distances, function(distances) parallelDist::parDist(distances, distance, threads = threads))
+    distances <- plyr::llply(distances, function(distances) parallelDist::parDist(distances, distance, threads = 1))
     
     # Combine all distances matrices by aggregating them
     distances <- Reduce('+', distances)
