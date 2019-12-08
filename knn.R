@@ -34,8 +34,8 @@
 #' @param threads Number of threads to be used when parallelizing, default is 1.
 #' @return A matrix of errors, optimal k and d. All tested ks and ks and all the used metrics.
 #' @examples
-#' knn_param_search(AirPassengers, 1:5, 1:3)
-#' knn_param_search(LakeHuron, 1:10, 1:6)
+#' knn(AirPassengers, 1:5, 1:3)
+#' knn(LakeHuron, 1:10, 1:6)
 knn <- function(y, k = 1:50, d = 1:50, distance = "euclidean", error_measure = "MAE", weight = "proportional", v = 1, threads = 1) {
     if (class(y) == "kNN") {
         warning("kNN model provided, simple prediction carried out", immediate. = TRUE)
@@ -50,3 +50,4 @@ knn <- function(y, k = 1:50, d = 1:50, distance = "euclidean", error_measure = "
         knn_param_search(y = y, k = k, d = d, distance = distance, error_measure = error_measure, weight = weight, v = v, threads = threads)
     }
 }
+
