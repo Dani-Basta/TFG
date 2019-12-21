@@ -7,35 +7,42 @@ library(forecast)
 # Load to Enviroment "knn_param_search", "knn_past" and "knn_elements"
 
 # y <- nottem
+
 y <- datasets::sunspot.month
 dates <- as.Date(time(y))
 full_dates <- as.Date(ts( c(y,1), start = time(y)[1], frequency = frequency(y) ))
 
 # y <- as.matrix(interCompFore, ncols = 1)
 # dates <- 1:length(y)
+# full_dates <- 1:(length(y)+1)
 
 # y <- as.matrix(btcnWeekRend, ncols = 1)
 # dates <- as.Date(read.csv("D:/Daniel/Investigación/BTC-EUR-weekly.csv")[,1])
-# 
-# y <- ts(get("rain"), start = 1914, frequency = 365.25)
+# full_dates <- as.Date(ts( c(y,1), start = time(y)[1], frequency = frequency(y) ))
+
+# y <- ts(get("rain"), start = "1914-01-01", frequency = 365)
 # dates <- as.Date(time(y))
+# full_dates <- as.Date(ts( c(y,1), start = time(y)[1], frequency = frequency(y) ))
+
+y <- forecast::taylor
+dates <- 1:length(y)
+full_dates <- c(dates, length(y)+1)
 
 n <- NROW(y)
-train_init <- floor(n * 0.85)
-test_init <- floor(n * 0.95)
+train_init <- floor(n * 0.75)
+test_init <- floor(n * 0.9)
 y_train <- head(y, test_init) # [1:test_init]
 distance <- "euclidean"
-error_measure <-  "RMSE"
+error_measure <- "RMSE"
 weight <- "proportional"
-n_threads <- 5
-ks <-  1:80
-ds <- 1:80
-# dates <- as.Date(time(y))
+n_threads <- 6
+ks <-  1:50
+ds <- 1:35
 min_y <- min(y)
 max_y <- max(y)
 
 # Get errors matrix, and best k and d
-res <- knn_param_search(y = y_train, k = ks, d = ds, init = train_init, distance = distance, 
+res <- knn_param_search(y = y_train, k = ks, d = ds, initial = train_init, distance = distance, 
                  error_measure = error_measure, weight = weight, threads = n_threads)
 
 # optimal_train <- knn_past(y = y_train, k = res$opt_k, d = res$opt_d, init = train_init, 
@@ -44,7 +51,7 @@ res <- knn_param_search(y = y_train, k = ks, d = ds, init = train_init, distance
 #                          distance_metric = distance, weight = weight, threads = n_threads)
 # optimal <- c(optimal_train$mean, optimal_test$mean)
 
-optimal <- knn_past(y = y, k = res$opt_k, d = res$opt_d, init = train_init, 
+optimal <- knn_past(y = y, k = res$opt_k, d = res$opt_d, initial = train_init, 
                     distance = distance, weight = weight, threads = n_threads)
 optimal_train <- head(optimal$mean, test_init-train_init )
 optimal_test <- tail(optimal$mean, n-test_init )
@@ -56,8 +63,16 @@ y_test_err <- y[(test_init + 1):n] #  tail(y, (n - test_init - 1) ) #
 sub_dates <- tail(dates, length(y) - train_init)
 # sub_dates <- c(as.Date(time(optimal_train$mean)), as.Date(time(optimal_test$mean))) 
 # sub_dates <- as.Date(time(optimal)) 
+
+ 
 naive <- y[train_init:(n - 1)] # ts(y[train_init:(n - 1)], start = time(y)[train_init + 1], frequency = frequency(y)) #
 # naive_total_error <- accuracy(naive, y_err) [switch(error_measure, ME = 1, RMSE = 2, MAE = 3)]
+
+# sesPred <- c(y_train_err, y_test_err) - tail(tsCV(y = y, ses, h = 1, initial = train_init, window = 1), n - train_init)
+sesPred <- c(y_train_err, y_test_err) - tail(tsCV(y = y, ses, h = 1, initial = train_init), n - train_init)
+
+seasnaiPred <- c(y_train_err, y_test_err) - tail(tsCV(y = y, snaive, h = 1, initial = train_init), n - train_init)
+
 cont_min <- min(res$errors)
 cont_max <- max(res$errors)
 cont_max_fix <- (cont_max - (cont_max - cont_min) * 0.4)
@@ -76,17 +91,29 @@ residuals_matrix[1, ] <- y_err - optimal$mean
 residuals_matrix[2, ] <- y_err - naive
 
 # Data for errors table
-names_col <- c("Optimal", "Naive", "Seasonal Naive", "", "", "")
+names_col <- c("Optimal", "Naive", "Seasonal Naive", "", "")
+
 optimal_train_error <- accuracy(optimal_train, y_train_err)
-optimal_test_error <- accuracy(optimal_test, y_test_err)
+optimal_test_error  <- accuracy(optimal_test, y_test_err)
+
 naive_train_error <- accuracy(naive[1:length(y_train_err)], y_train_err)
-naive_test_error <- accuracy(naive[(length(y_train_err) + 1):length(naive)], y_test_err)
+naive_test_error  <- accuracy(naive[(length(y_train_err) + 1):length(naive)], y_test_err)
+
+ses_train_error <- accuracy(sesPred[1:length(y_train_err)], y_train_err)
+ses_test_error  <- accuracy(sesPred[(length(y_train_err) + 1):length(naive)], y_test_err)
+
+snai_train_error <- accuracy(seasnaiPred[1:length(y_train_err)], y_train_err)
+snai_test_error  <- accuracy(seasnaiPred[(length(y_train_err) + 1):length(naive)], y_test_err)
+
 
 naive_total_error <- naive_train_error[switch(error_measure, ME = 1, RMSE = 2, MAE = 3)]
 
-errors_matrix <- matrix(nrow = 2, ncol = 10)
+errors_matrix <- matrix(nrow = 4, ncol = 10)
+colnames(errors_matrix) <- c("Train-ME", "RMSE", "MAE", "MPE", "MAPE", "Test-ME", "RMSE", "MAE", "MPE", "MAPE")
 errors_matrix[1, ] <- c(optimal_train_error, optimal_test_error)
 errors_matrix[2, ] <- c(naive_train_error, naive_test_error)
+errors_matrix[3, ] <- c(ses_train_error, ses_test_error)
+errors_matrix[4, ] <- c(snai_train_error, snai_test_error)
 
 errors_matrix_tab1 <- errors_matrix
 errors_matrix_tab2 <- errors_matrix

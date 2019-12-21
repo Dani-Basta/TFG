@@ -143,13 +143,16 @@ knn_forecast <- function(y, k, d, distance = "euclidean", weight = "proportional
   
   if ( resType == "ts" )  {
     forec$mean <- tail(ts(c(1, prediction), start = sta, frequency = freq ), 1)
+    forec$fitted <- ts(start = sta, frequency = freq)
   }
   else if ( resType == "tsibble" ) {
     resul[ measured_vars(resul)[v] ] <- prediction
+    forec$fitted <- NA
     forec$mean <- resul
   } 
   else{
     forec$mean <- prediction
+    forec$fitted <- NA
   }
   
   forec$lower <- NA

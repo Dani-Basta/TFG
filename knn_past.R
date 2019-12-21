@@ -164,7 +164,9 @@ knn_past <- function(y, k, d, initial = NULL, distance = "euclidean", weight = "
       prediction_index <- prediction_index - 1
   }
   if ( resType == "ts")  {
-    forec$mean <- ts(predictions, start = sta, frequency = freq )
+    forec$fitted <- ts(predictions, start = sta, frequency = freq )
+    # forec$mean <- ts( start = sta, frequency = freq )
+    forec$mean <- ts( start = sta, frequency = freq )
   }
   else if ( resType == "tsibble" ) {
     resul[ measured_vars(resul)[v] ] <- predictions
