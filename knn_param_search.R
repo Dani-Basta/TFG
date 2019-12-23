@@ -39,6 +39,7 @@
 #' @examples
 #' knn_param_search(AirPassengers, 1:5, 1:3)
 #' knn_param_search(LakeHuron, 1:10, 1:6)
+#' @export
 knn_param_search <- function(y, k, d, initial = NULL, distance = "euclidean", error_measure = "MAE", weight = "proportional", v = 1, threads = 1){
   require(parallelDist)
   require(forecast)
@@ -93,11 +94,14 @@ knn_param_search <- function(y, k, d, initial = NULL, distance = "euclidean", er
   
   # Initialization of variables to be used
   if ( any(class(y) == "tbl_ts")) {
+    if (!requireNamespace("tsibble", quietly = TRUE)) {
+      stop('Package "tsibble" needed for this function to work with tsibble objects. Please install it.', call. = FALSE)
+    }
     require(tsibble)
     if (length(tsibble::measured_vars(y)) < v ) {
-      stop(paste0("Index of variable off limits: v = ", v, " but given time series has ", length(measured_vars(y)), " variables."))
+      stop(paste0("Index of variable off limits: v = ", v, " but given time series has ", length(tsibble::measured_vars(y)), " variables."))
     }
-    y <- matrix(sapply( y[ measured_vars(y) ], as.double), ncol = length(measures(y) ) )
+    y <- matrix(sapply( y[tsibble::measured_vars(y) ], as.double), ncol = length(tsibble::measures(y)))
   }
   else{
     if ( NCOL(y) < v ) {

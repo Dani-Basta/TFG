@@ -25,6 +25,7 @@
 #' @examples
 #' knn_forecast(AirPassengers, 5, 2)
 #' knn_forecast(LakeHuron, 3, 6)
+#' @export
 knn_forecast <- function(y, k, d, distance = "euclidean", weight = "proportional", v = 1, threads = 1, h = 1) {
   require(parallelDist)
   require(parallel)
@@ -79,6 +80,9 @@ knn_forecast <- function(y, k, d, distance = "euclidean", weight = "proportional
   forec$x <- y
 
   if ( any(class(y) == "ts" ) ) {
+    if (!requireNamespace("tseries", quietly = TRUE)) {
+      stop('Package "tseries" needed for this function to work with ts objects. Please install it.', call. = FALSE)
+    }
     require(tseries)
     
     if ( NCOL(y) < v ) {
@@ -87,25 +91,28 @@ knn_forecast <- function(y, k, d, distance = "euclidean", weight = "proportional
     
     sta <- time(y)[n]
     freq <- frequency(y)
-    resType = "ts"
+    resType <- "ts"
     
     y <- matrix(sapply(y, as.double), ncol = NCOL(y))
   }
   else if ( any(class(y) == "tbl_ts")) {
+    if (!requireNamespace("tsibble", quietly = TRUE)) {
+      stop('Package "tsibble" needed for this function to work with tsibble objects. Please install it.', call. = FALSE)
+    }
     require(tsibble)
     
     if (length(tsibble::measured_vars(y)) < v ) {
-      stop(paste0("Index of variable off limits: v = ", v, " but given time series has ", length(measured_vars(y)), " variables."))
+      stop(paste0("Index of variable off limits: v = ", v, " but given time series has ", length(tsibble::measured_vars(y)), " variables."))
     }
     
-    resul <- tail( append_row(y), 1 )
+    resul <- tail(tsibble::append_row(y), 1)
 
-    resType = "tsibble"
+    resType <- "tsibble"
     
     y <- matrix(sapply( y[ tsibble::measured_vars(y) ], as.double), ncol = length(tsibble::measures(y)) )
   } 
   else{
-    resType = "undef"
+    resType <- "undef"
     
     if ( NCOL(y) < v ) {
       stop(paste0("Index of variable off limits: v = ", v, " but given time series has ", NCOL(y), " variables."))
@@ -146,7 +153,7 @@ knn_forecast <- function(y, k, d, distance = "euclidean", weight = "proportional
     forec$fitted <- ts(start = sta, frequency = freq)
   }
   else if ( resType == "tsibble" ) {
-    resul[ measured_vars(resul)[v] ] <- prediction
+    resul[tsibble::measured_vars(resul)[v]] <- prediction
     forec$fitted <- NA
     forec$mean <- resul
   } 
@@ -158,7 +165,7 @@ knn_forecast <- function(y, k, d, distance = "euclidean", weight = "proportional
   forec$lower <- NA
   forec$upper <- NA
   
-  forec$residuals <- tail(y[,v], 1) - prediction
+  forec$residuals <- tail(y[, v], 1) - prediction
   
   forec$distances <- rev(distances)
   
