@@ -28,26 +28,27 @@
 #' @examples
 #' knn_past(AirPassengers, 5, 2)
 #' knn_past(LakeHuron, 3, 6)
+#' @export
 knn_past <- function(y, k, d, initial = NULL, distance = "euclidean", weight = "proportional", v = 1, threads = 1) {
   require(parallelDist)
   require(parallel)
-  
+
   forec <- list()
   class(forec) <- "forecast"
   forec$method <- "k-Nearest Neighbors over known observations"
 
   if (any(class(y) == "kNN")) {
     forec$model <- y
-    
+
     forec$model$optim_call <- forec$model$call
     forec$model$call <- NULL
-    
+
     k <- y$opt_k
     d <- y$opt_d
     distance <- y$distance
     weight <- y$weight
     threads <- threads
-    
+
     y <- y$x
   }
   else {
@@ -86,6 +87,9 @@ knn_past <- function(y, k, d, initial = NULL, distance = "euclidean", weight = "
   forec$x <- y
 
   if ( any(class(y) == "ts" ) ) {
+    if (!requireNamespace("tseries", quietly = TRUE)) {
+      stop('Package "tseries" needed for this function to work with ts objects. Please install it.', call. = FALSE)
+    }
     require(tseries)
     
     if ( NCOL(y) < v ) {
@@ -94,28 +98,31 @@ knn_past <- function(y, k, d, initial = NULL, distance = "euclidean", weight = "
     
     sta <- time(y)[initial + 1]
     freq <- frequency(y)
-    resType = "ts"
+    resType <- "ts"
     
     y <- matrix(sapply(y, as.double), ncol = NCOL(y))
   }
   else if ( any(class(y) == "tbl_ts")) {
+    if (!requireNamespace("tsibble", quietly = TRUE)) {
+      stop('Package "tsibble" needed for this function to work with tsibble objects. Please install it.', call. = FALSE)
+    }
     require(tsibble)
     
     if (length(tsibble::measured_vars(y)) < v ) {
-      stop(paste0("Index of variable off limits: v = ", v, " but given time series has ", length(measured_vars(y)), " variables."))
+      stop(paste0("Index of variable off limits: v = ", v, " but given time series has ", length(tsibble::measured_vars(y)), " variables."))
     }
 
-    resul <- tail(y, (n - initial ) )
+    resul <- tail(y, (n - initial))
     
-    resul[measured_vars(resul)] <- NA
+    resul[tsibble::measured_vars(resul)] <- NA
     
-    resType = "tsibble"
+    resType <- "tsibble"
     
-    y <- matrix(sapply( y[ tsibble::measured_vars(y) ], as.double), ncol = length(measures(y) ))
+    y <- matrix(sapply(y[tsibble::measured_vars(y)], as.double), ncol = length(tsibble::measures(y)))
     
   } 
   else{
-    resType = "undef"
+    resType <- "undef"
     
     if ( NCOL(y) < v ) {
       stop(paste0("Index of variable off limits: v = ", v, " but given time series has ", NCOL(y), " variables."))
@@ -130,7 +137,7 @@ knn_past <- function(y, k, d, initial = NULL, distance = "euclidean", weight = "
   # Get 'elements' matrices (one per variable)
   distances <- plyr::alply(y, 2, function(y_col) knn_elements(matrix(y_col, ncol = 1), d))
 
-  # For each of the elements matrices, calculate the distances between 
+  # For each of the elements matrices, calculate the distances between
   # every 'element'. This results in a list of triangular matrices.
   distances <- plyr::llply(distances, function(elements_matrix) parallelDist::parDist(elements_matrix, distance, threads = threads))
   
@@ -151,25 +158,25 @@ knn_past <- function(y, k, d, initial = NULL, distance = "euclidean", weight = "
       k_nn <- head(k_nn[sort.int(distances_col[k_nn], index.return = TRUE, decreasing = FALSE)$ix], k)
 
       # Calculate the weights for the future computation of the weighted mean
-      weights <- switch(weight, 
+      weights <- switch(weight,
                         proportional = 1 / (distances_col[k_nn] + .Machine$double.xmin * 1e150),
                         average = rep.int(1, k),
                         linear = k:1
                     )
       
-      neighbors[,prediction_index] <- (n + 2 - j - k_nn) - 1 
+      neighbors[, prediction_index] <- (n + 2 - j - k_nn) - 1
       
       # Calculate the predicted value
       predictions[prediction_index] <- weighted.mean(y[n + 2 - j - k_nn, v], weights)
       prediction_index <- prediction_index - 1
   }
   if ( resType == "ts")  {
-    forec$fitted <- ts(predictions, start = sta, frequency = freq )
+    forec$fitted <- ts(predictions, start = sta, frequency = freq)
     forec$mean <- ts(start = sta, frequency = freq)
   }
   else if ( resType == "tsibble" ) {
     forec$mean <- resul
-    resul[ measured_vars(resul)[v] ] <- predictions
+    resul[measured_vars(resul)[v]] <- predictions
     forec$fitted <- resul
   } 
   else{
@@ -181,7 +188,7 @@ knn_past <- function(y, k, d, initial = NULL, distance = "euclidean", weight = "
   forec$lower <- rep(NA, length(predictions))
   forec$upper <- rep(NA, length(predictions))
   
-  forec$residuals <- tail(y[,v], length(predictions)) - predictions 
+  forec$residuals <- tail(y[, v], length(predictions)) - predictions
   
   
   forec$neighbors <- neighbors
