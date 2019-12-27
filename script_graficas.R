@@ -57,7 +57,7 @@ pMain <- layout(pMain, xaxis = list(range = list( dates[1], dates[length(dates)]
 pMainBase <- pMain
 
 
-pMain <- add_trace(pMain, x = sub_dates, y = optimal$mean, legendgroup = "optim", 
+pMain <- add_trace(pMain, x = sub_dates, y = optimal$fitted, legendgroup = "optim", 
                    name = paste0("Optimal (k = ", res$opt_k, ", d = ", res$opt_d, ")"), line = list(color = colPalette[2]))
 
 #Errors
@@ -74,7 +74,7 @@ combPlotMain <- subplot(pMain, pErrMain, nrows = 2, shareX = TRUE )
 #                               Plots for optimization tab
 pOpt <- plot_ly(x = dates, y = y, type = "scatter",  name = "Observed Time Series", 
                 mode = "lines", legendgroup = "real", hoverinfo = "x+y", line = list(color = colPalette[1]))
-pOpt <- add_trace(pOpt, x = sub_dates, y = optimal$mean, legendgroup = "optim", 
+pOpt <- add_trace(pOpt, x = sub_dates, y = optimal$fitted, legendgroup = "optim", 
                   name = paste0("Optimal (k = ", res$opt_k, ", d = ", res$opt_d, ")"), line = list(color = colPalette[2]))
 
 pOpt <- add_segments(pOpt, x = dates[train_init], xend = dates[train_init], y = min_y - 0.05 * (max_y - min_y), 

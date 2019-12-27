@@ -20,7 +20,7 @@ server <- function(input, output, session) {
              (input$selDtabDist == res$opt_d || input$selDtabDist == "") ) {
             
             # Parámetros de combinación óptima
-            pMain <<- add_trace(pMain, x = sub_dates, y = optimal$mean, line = list(color = colPalette[2]), 
+            pMain <<- add_trace(pMain, x = sub_dates, y = optimal$fitted, line = list(color = colPalette[2]), 
                                name = paste0("Optimal (k = ", res$opt_k, ", d = ", res$opt_d, ")"), legendgroup = "optim")
             
             errors <- residuals_matrix[1, ]

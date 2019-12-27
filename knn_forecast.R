@@ -19,7 +19,7 @@
 #' }
 #' @param v Variable to be predicted if given multivariate time series.
 #' @param threads Number of threads to be used when parallelizing, default is 1.
-#' @param h Temporal horizon of the prediction. Currently only value 1 is implemented. 
+#' @param h Temporal horizon of the prediction. Currently only value 1 is implemented.
 #' This parameter is present only for compatibility with the forecast::tsCV function.
 #' @return The predicted value.
 #' @examples
@@ -40,7 +40,7 @@ knn_forecast <- function(y, k, d, distance = "euclidean", weight = "proportional
   class(forec) <- "forecast"
   forec$method <- "k-Nearest Neighbors for unknown observations"
   
-  if (class(y) == "kNN") {
+  if (any(class(y) == "kNN")) {
     forec$model <- y
     
     k <- y$opt_k
@@ -109,7 +109,7 @@ knn_forecast <- function(y, k, d, distance = "euclidean", weight = "proportional
 
     resType <- "tsibble"
     
-    y <- matrix(sapply( y[ tsibble::measured_vars(y) ], as.double), ncol = length(tsibble::measures(y)) )
+    y <- matrix(sapply( y[ tsibble::measured_vars(y) ], as.double), ncol = length(tsibble::measures(y)))
   } 
   else{
     resType <- "undef"
@@ -124,7 +124,7 @@ knn_forecast <- function(y, k, d, distance = "euclidean", weight = "proportional
   # Get 'elements' matrices (one per variable)
   distances <- plyr::alply(y, 2, function(y_col) knn_elements(matrix(y_col, ncol = 1), d))
 
-  # For each of the elements matrices, obtain the distances between 
+  # For each of the elements matrices, obtain the distances between
   # the most recent 'element' and the rest of the 'elements'.
   # This results in a list of distances vectors
   distances <- plyr::llply(distances, function(elements_matrix) parallelDist::parDist(elements_matrix, distance, threads = threads)[1:(n - d)])
@@ -153,8 +153,8 @@ knn_forecast <- function(y, k, d, distance = "euclidean", weight = "proportional
     forec$fitted <- ts(start = sta, frequency = freq)
   }
   else if ( resType == "tsibble" ) {
+    forec$fitted <- resul
     resul[tsibble::measured_vars(resul)[v]] <- prediction
-    forec$fitted <- NA
     forec$mean <- resul
   } 
   else{

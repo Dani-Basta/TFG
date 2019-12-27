@@ -132,6 +132,8 @@ knn_param_search <- function(y, k, d, initial = NULL, distance = "euclidean", er
   clust <- parallel::makeCluster(threads)
   doParallel::registerDoParallel(cl = clust)
 
+  # on.exit(stopCluster(clust))
+  
   errors_matrix <- foreach(i = 1:ds, .combine = cbind, .packages = c("forecast", "parallelDist"), .export = "knn_elements") %dopar% {
     predictions <- matrix(nrow = ks, ncol = n - initial)
     errors <- vector(mode = "numeric", ks)
@@ -183,7 +185,7 @@ knn_param_search <- function(y, k, d, initial = NULL, distance = "euclidean", er
 
     errors
   }
-
+  
   foreach::registerDoSEQ()
   parallel::stopCluster(clust)
 
