@@ -14,7 +14,7 @@ knn_elements <- function(y, d) {
   m <- NCOL(y)
   last_elem <- n - d
 
-  # Fill matrix as described above, it is done vertically for efficiency reasons
+  # Fill matrix as described above, done vertically for efficiency reasons
   elements_matrix <- matrix(nrow = last_elem + 1, ncol = d * m)
   
   col <- 1
