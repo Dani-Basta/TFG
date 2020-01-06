@@ -52,8 +52,8 @@
 #' knn_param_search(AirPassengers, 1:5, 1:3)
 #' knn_param_search(LakeHuron, 1:10, 1:6)
 #' @export
-knn_param_search <- function(y, k, d, initial = NULL, distance = "euclidean",
-        error_measure = "MAE", weight = "proportional", v = 1, threads = 1) {
+knn_param_search <- function(y, k, d, initial = NULL, distance = 'euclidean',
+        error_measure = 'MAE', weight = 'proportional', v = 1, threads = 1) {
   require(parallelDist)
   require(forecast)
   require(foreach)
@@ -61,11 +61,11 @@ knn_param_search <- function(y, k, d, initial = NULL, distance = "euclidean",
   require(iterators)
 
   if (any(is.na(y))) {
-    stop("There are NAs values in the time series")
+    stop('There are NAs values in the time series')
   }
   
   if (any(is.nan(y))) {
-    stop("There are NaNs values in the time series")
+    stop('There are NaNs values in the time series')
   }
   
   # Default number of threads to be used
@@ -86,11 +86,11 @@ knn_param_search <- function(y, k, d, initial = NULL, distance = "euclidean",
   )
   
   if (error_type == 0) {
-    stop(paste0("Error measure '", error_measure, "' unrecognized."))
+    stop(paste0('Error measure "', error_measure, '" unrecognized.'))
   }
   
-  if (all(weight != c("proportional", "average", "linear"))) {
-    stop(paste0("Weight metric '", weight, "' unrecognized."))
+  if (all(weight != c('proportional', 'average', 'linear'))) {
+    stop(paste0('Weight metric "', weight, '" unrecognized.'))
   }
 
   # Sort k or d vectors if they are unsorted
@@ -103,29 +103,29 @@ knn_param_search <- function(y, k, d, initial = NULL, distance = "euclidean",
   }
 
   model <- list()
-  class(model) <- "kNN"
+  class(model) <- 'kNN'
 
   model$x <- y
   
   # Initialization of variables to be used
-  if (any(class(y) == "tbl_ts")) {
-    if (!requireNamespace("tsibble", quietly = TRUE)) {
+  if (any(class(y) == 'tbl_ts')) {
+    if (!requireNamespace('tsibble', quietly = TRUE)) {
       stop(paste0('Package "tsibble" needed for this function to work with',
                 'tsibble objects. Please install it.'), call. = FALSE)
     }
     require(tsibble)
     if (length(tsibble::measured_vars(y)) < v) {
-      stop(paste0("Index of variable off limits: v = ", v,
-                  " but given time series has ",
-                  length(tsibble::measured_vars(y)), " variables."))
+      stop(paste0('Index of variable off limits: v = ', v,
+                  ' but given time series has ',
+                  length(tsibble::measured_vars(y)), ' variables.'))
     }
     y <- matrix(sapply( y[tsibble::measured_vars(y) ], as.double), ncol =
                     length(tsibble::measures(y)))
   }
   else {
     if (NCOL(y) < v) {
-      stop(paste0("Index of variable off limits: v = ", v,
-                  " but given time series has ", NCOL(y), " variables."))
+      stop(paste0('Index of variable off limits: v = ', v,
+                  ' but given time series has ', NCOL(y), ' variables.'))
     }
     y <- matrix(sapply(y, as.numeric), ncol = NCOL(y))
   }
@@ -133,8 +133,8 @@ knn_param_search <- function(y, k, d, initial = NULL, distance = "euclidean",
   n <- NROW(y)
   
   if (max(d) + max(k) >= n) {
-    stop(paste0("timeseries length must be higher than k+d: ", max(k), "+",
-                max(d), " >= ", n))
+    stop(paste0('timeseries length must be higher than k+d: ', max(k), '+',
+                max(d), ' >= ', n))
   }
   
   ks <- length(k)
@@ -157,10 +157,10 @@ knn_param_search <- function(y, k, d, initial = NULL, distance = "euclidean",
   # on.exit(stopCluster(clust))
   
   errors_matrix <- foreach(i = 1:ds, .combine = cbind,
-                           .packages = c("forecast", "parallelDist"),
-                           .export = "knn_elements") %dopar% {
+                           .packages = c('forecast', 'parallelDist'),
+                           .export = 'knn_elements') %dopar% {
     predictions <- matrix(nrow = ks, ncol = n - initial)
-    errors <- vector(mode = "numeric", ks)
+    errors <- vector(mode = 'numeric', ks)
 
     # Get 'elements' matrices (one per variable)
     distances <- plyr::alply(y, 2, function(y_col)
@@ -173,7 +173,7 @@ knn_param_search <- function(y, k, d, initial = NULL, distance = "euclidean",
     
     # Combine all distances matrices by aggregating them
     distances <- Reduce('+', distances)
-    distances_size <- attr(distances, "Size")
+    distances_size <- attr(distances, 'Size')
 
     for (j in (n - initial + 1):2) {
       # Get column needed from the distances matrix and sort it
@@ -227,7 +227,7 @@ knn_param_search <- function(y, k, d, initial = NULL, distance = "euclidean",
   opt_d <- d[ceiling(index_min_error / ks)]
   dimnames(errors_matrix) <- list(k, d)
   
-  model$method <- "k-Nearest Neighbors"
+  model$method <- 'k-Nearest Neighbors'
   model$opt_k <- opt_k
   model$opt_d <- opt_d
   model$tested_ds <- d

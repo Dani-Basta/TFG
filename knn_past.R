@@ -40,16 +40,16 @@
 #' knn_past(AirPassengers, 5, 2)
 #' knn_past(LakeHuron, 3, 6)
 #' @export
-knn_past <- function(y, k, d, initial = NULL, distance = "euclidean", weight =
-                         "proportional", v = 1, threads = 1) {
+knn_past <- function(y, k, d, initial = NULL, distance = 'euclidean', weight =
+                         'proportional', v = 1, threads = 1) {
     require(parallelDist)
     require(parallel)
     
     forec <- list()
-    class(forec) <- "forecast"
-    forec$method <- "k-Nearest Neighbors over known observations"
+    class(forec) <- 'forecast'
+    forec$method <- 'k-Nearest Neighbors over known observations'
     
-    if (any(class(y) == "kNN")) {
+    if (any(class(y) == 'kNN')) {
         forec$model <- y
         
         forec$model$optim_call <- forec$model$call
@@ -65,8 +65,8 @@ knn_past <- function(y, k, d, initial = NULL, distance = "euclidean", weight =
     }
     else {
         model <- list()
-        class(model) <- "kNN"
-        model$method <- "k-Nearest Neighbors"
+        class(model) <- 'kNN'
+        model$method <- 'k-Nearest Neighbors'
         model$k <- k
         model$d <- d
         model$distance <- distance
@@ -75,15 +75,15 @@ knn_past <- function(y, k, d, initial = NULL, distance = "euclidean", weight =
     }
     
     if ( any( is.na(y) ) ) {
-        stop("There are NAs values in the time series")
+        stop('There are NAs values in the time series')
     }
     
     if ( any( is.nan(y) )) {
-        stop("There are NaNs values in the time series")
+        stop('There are NaNs values in the time series')
     }
     
-    if ( all( weight != c("proportional", "average", "linear") ) ) {
-        stop(paste0("Weight metric '", weight, "' unrecognized."))
+    if ( all( weight != c('proportional', 'average', 'linear') ) ) {
+        stop(paste0('Weight metric "', weight, '" unrecognized.'))
     }
     
     # Default number of threads to be used
@@ -98,46 +98,46 @@ knn_past <- function(y, k, d, initial = NULL, distance = "euclidean", weight =
     
     forec$x <- y
     
-    if ( any(class(y) == "ts" ) ) {
-        if (!requireNamespace("tseries", quietly = TRUE)) {
+    if ( any(class(y) == 'ts' ) ) {
+        if (!requireNamespace('tseries', quietly = TRUE)) {
             stop('Package "tseries" needed for this function to work with ts objects. Please install it.', call. = FALSE)
         }
         require(tseries)
         
         if ( NCOL(y) < v ) {
-            stop(paste0("Index of variable off limits: v = ", v, " but given time series has ", NCOL(y), " variables."))
+            stop(paste0('Index of variable off limits: v = ', v, ' but given time series has ', NCOL(y), ' variables.'))
         }
         
         sta <- time(y)[initial + 1]
         freq <- frequency(y)
-        resType <- "ts"
+        resType <- 'ts'
         
         y <- matrix(sapply(y, as.double), ncol = NCOL(y))
     }
-    else if ( any(class(y) == "tbl_ts")) {
-        if (!requireNamespace("tsibble", quietly = TRUE)) {
+    else if ( any(class(y) == 'tbl_ts')) {
+        if (!requireNamespace('tsibble', quietly = TRUE)) {
             stop('Package "tsibble" needed for this function to work with tsibble objects. Please install it.', call. = FALSE)
         }
         require(tsibble)
         
         if (length(tsibble::measured_vars(y)) < v ) {
-            stop(paste0("Index of variable off limits: v = ", v, " but given time series has ", length(tsibble::measured_vars(y)), " variables."))
+            stop(paste0('Index of variable off limits: v = ', v, ' but given time series has ', length(tsibble::measured_vars(y)), ' variables.'))
         }
         
         resul <- tail(y, (n - initial))
         
         resul[tsibble::measured_vars(resul)] <- NA
         
-        resType <- "tsibble"
+        resType <- 'tsibble'
         
         y <- matrix(sapply(y[tsibble::measured_vars(y)], as.double), ncol = length(tsibble::measures(y)))
         
     }
     else {
-        resType <- "undef"
+        resType <- 'undef'
         
         if ( NCOL(y) < v ) {
-            stop(paste0("Index of variable off limits: v = ", v, " but given time series has ", NCOL(y), " variables."))
+            stop(paste0('Index of variable off limits: v = ', v, ' but given time series has ', NCOL(y), ' variables.'))
         }
         
         y <- matrix(sapply(y, as.double), ncol = NCOL(y))
@@ -156,7 +156,7 @@ knn_past <- function(y, k, d, initial = NULL, distance = "euclidean", weight =
     # Combine all distances matrices by aggregating them
     distances <- Reduce('+', distances)
     
-    distances_size <- attr(distances, "Size")
+    distances_size <- attr(distances, 'Size')
     
     prediction_index <- length(predictions)
     for (j in 2:(n - initial + 1)) {
@@ -182,11 +182,11 @@ knn_past <- function(y, k, d, initial = NULL, distance = "euclidean", weight =
         predictions[prediction_index] <- weighted.mean(y[n + 2 - j - k_nn, v], weights)
         prediction_index <- prediction_index - 1
     }
-    if ( resType == "ts") {
+    if ( resType == 'ts') {
         forec$fitted <- ts(predictions, start = sta, frequency = freq)
         forec$mean <- ts(start = sta, frequency = freq)
     }
-    else if ( resType == "tsibble" ) {
+    else if ( resType == 'tsibble' ) {
         forec$mean <- resul
         resul[tsibble::measured_vars(resul)[v]] <- predictions
         forec$fitted <- resul

@@ -50,10 +50,10 @@
 #' knn(AirPassengers, 1:5, 1:3)
 #' knn(LakeHuron, 1:10, 1:6)
 #' @export
-knn <- function(y, k = 1:50, d = 1:50, distance = "euclidean", error_measure =
-    "MAE", weight = "proportional", v = 1, threads = 1) {
+knn <- function(y, k = 1:50, d = 1:50, distance = 'euclidean', error_measure =
+    'MAE', weight = 'proportional', v = 1, threads = 1) {
     if (any(class(y) == 'kNN')) {
-        warning("kNN model provided, simple prediction carried out",
+        warning('kNN model provided, simple prediction carried out',
                 immediate. = TRUE)
         knn_forecast(y)
     }
@@ -66,8 +66,8 @@ knn <- function(y, k = 1:50, d = 1:50, distance = "euclidean", error_measure =
     else {
         warning(paste0('Beginning parameter search process. This may take a ',
                        'while'), immediate. = TRUE)
-        knn_param_search(y = y, k = k, d = d, distance = distance, 
+        knn_forecast(knn_param_search(y = y, k = k, d = d, distance = distance,
                          error_measure = error_measure, weight = weight,
-                         v = v, threads = threads)
+                         v = v, threads = threads))
     }
 }
