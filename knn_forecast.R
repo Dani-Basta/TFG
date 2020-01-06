@@ -150,7 +150,7 @@ knn_forecast <- function(y, k, d, distance = 'euclidean', weight =
   distances <- Reduce('+', distances)
 
   # Get the indexes of the k nearest 'elements', these are called neighbors
-  k_nn <- which( distances <= sort.int(distances, partial = k)[k],
+  k_nn <- which(distances <= sort.int(distances, partial = k)[k],
                  arr.ind = TRUE)
   # We sort them so the closer neighbor is at the first position
   k_nn <- head(k_nn[sort.int(distances[k_nn], index.return = TRUE,
