@@ -52,8 +52,9 @@
 #' knn_param_search(AirPassengers, 1:5, 1:3)
 #' knn_param_search(LakeHuron, 1:10, 1:6)
 #' @export
-knn_param_search <- function(y, k, d, initial = NULL, distance = 'euclidean',
-        error_measure = 'MAE', weight = 'proportional', v = 1, threads = 1) {
+knn_param_search <- function(y, k, d, initial = NULL, distance = "euclidean",
+                             error_measure = "MAE", weight = "proportional",
+                             v = 1, threads = 1) {
   require(parallelDist)
   require(forecast)
   require(foreach)
@@ -61,13 +62,13 @@ knn_param_search <- function(y, k, d, initial = NULL, distance = 'euclidean',
   require(iterators)
 
   if (any(is.na(y))) {
-    stop('There are NAs values in the time series')
+    stop("There are NAs values in the time series")
   }
-  
+
   if (any(is.nan(y))) {
-    stop('There are NaNs values in the time series')
+    stop("There are NaNs values in the time series")
   }
-  
+
   # Default number of threads to be used
   if (is.null(threads)) {
     cores <- parallel::detectCores(logical = FALSE)
@@ -77,73 +78,73 @@ knn_param_search <- function(y, k, d, initial = NULL, distance = 'euclidean',
   # Choose the appropiate index of the accuracy result,
   # depending on the error_measure
   error_type <- switch(error_measure,
-                      ME = 1,
-                      RMSE = 2,
-                      MAE = 3,
-                      MPE = 4,
-                      MAPE = 5,
-                      0
+                       ME = 1,
+                       RMSE = 2,
+                       MAE = 3,
+                       MPE = 4,
+                       MAPE = 5,
+                       0
   )
-  
+
   if (error_type == 0) {
-    stop(paste0('Error measure "', error_measure, '" unrecognized.'))
+    stop(paste0("Error measure '", error_measure, "' unrecognized."))
   }
-  
-  if (all(weight != c('proportional', 'average', 'linear'))) {
-    stop(paste0('Weight metric "', weight, '" unrecognized.'))
+
+  if (all(weight != c("proportional", "average", "linear"))) {
+    stop(paste0("Weight metric '", weight, "' unrecognized."))
   }
 
   # Sort k or d vectors if they are unsorted
   if (is.unsorted(k)) {
-      k <- sort(k)
+    k <- sort(k)
   }
-  
+
   if (is.unsorted(d)) {
-      d <- sort(d)
+    d <- sort(d)
   }
 
   model <- list()
-  class(model) <- 'kNN'
+  class(model) <- "kNN"
 
   model$x <- y
-  
+
   # Initialization of variables to be used
-  if (any(class(y) == 'tbl_ts')) {
-    if (!requireNamespace('tsibble', quietly = TRUE)) {
-      stop(paste0('Package "tsibble" needed for this function to work with',
-                'tsibble objects. Please install it.'), call. = FALSE)
+  if (any(class(y) == "tbl_ts")) {
+    if (!requireNamespace("tsibble", quietly = TRUE)) {
+      stop(paste0("Package 'sibble' needed for this function to work with",
+                  "tsibble objects. Please install it."), call. = FALSE)
     }
     require(tsibble)
     if (length(tsibble::measured_vars(y)) < v) {
-      stop(paste0('Index of variable off limits: v = ', v,
-                  ' but given time series has ',
-                  length(tsibble::measured_vars(y)), ' variables.'))
+      stop(paste0("Index of variable off limits: v = ", v,
+                  " but given time series has ",
+                  length(tsibble::measured_vars(y)), " variables."))
     }
-    y <- matrix(sapply( y[tsibble::measured_vars(y) ], as.double), ncol =
-                    length(tsibble::measures(y)))
+    y <- matrix(sapply(y[tsibble::measured_vars(y)], as.double), ncol =
+                  length(tsibble::measures(y)))
   }
   else {
     if (NCOL(y) < v) {
-      stop(paste0('Index of variable off limits: v = ', v,
-                  ' but given time series has ', NCOL(y), ' variables.'))
+      stop(paste0("Index of variable off limits: v = ", v,
+                  " but given time series has ", NCOL(y), " variables."))
     }
     y <- matrix(sapply(y, as.numeric), ncol = NCOL(y))
   }
-  
+
   n <- NROW(y)
-  
+
   if (max(d) + max(k) >= n) {
-    stop(paste0('timeseries length must be higher than k+d: ', max(k), '+',
-                max(d), ' >= ', n))
+    stop(paste0("timeseries length must be higher than k+d: ", max(k), "+",
+                max(d), " >= ", n))
   }
-  
+
   ks <- length(k)
   ds <- length(d)
   initial <- ifelse(is.null(initial), floor(n * 0.7), initial)
   real_values <- matrix(y[(initial + 1):n, v])
-  
-  # This next line is only there to avoid 'No visible binding for global
-  # variable' warning in R CMD check due to i variable used in foreach loop
+
+  # This next line is only there to avoid "No visible binding for global
+  # variable" warning in R CMD check due to i variable used in foreach loop
   i <- NULL
 
   # For each d an 'elements' matrix and a distances matrix is calculated. Then,
@@ -154,38 +155,36 @@ knn_param_search <- function(y, k, d, initial = NULL, distance = 'euclidean',
   clust <- parallel::makeCluster(threads)
   doParallel::registerDoParallel(cl = clust)
 
-  # on.exit(stopCluster(clust))
-  
   errors_matrix <- foreach(i = 1:ds, .combine = cbind,
-                           .packages = c('forecast', 'parallelDist'),
-                           .export = 'knn_elements') %dopar% {
+                           .packages = c("forecast", "parallelDist"),
+                           .export = "knn_elements") %dopar% {
     predictions <- matrix(nrow = ks, ncol = n - initial)
-    errors <- vector(mode = 'numeric', ks)
+    errors <- vector(mode = "numeric", ks)
 
     # Get 'elements' matrices (one per variable)
     distances <- plyr::alply(y, 2, function(y_col)
-                    knn_elements(matrix(y_col, ncol = 1), d[i]))
-    
+    knn_elements(matrix(y_col, ncol = 1), d[i]))
+
     # For each of the elements matrices, calculate the distances between
     # every 'element'. This results in a list of triangular matrices.
     distances <- plyr::llply(distances, function(distances)
         parallelDist::parDist(distances, distance, threads = 1))
-    
+
     # Combine all distances matrices by aggregating them
-    distances <- Reduce('+', distances)
-    distances_size <- attr(distances, 'Size')
+    distances <- Reduce("+", distances)
+    distances_size <- attr(distances, "Size")
 
     for (j in (n - initial + 1):2) {
       # Get column needed from the distances matrix and sort it
       initial_index <- distances_size * (j - 1) - j * (j - 1) / 2 + 1
       distances_col <- distances[initial_index:(initial_index + n - d[i] - j)]
-      
+
       # Get the indexes of the k nearest 'elements', these are called neighbors
-      sorted_dists <- which( distances_col <= sort.int(distances_col,
-                                    partial = max(k))[max(k)], arr.ind = TRUE)
+      sorted_dists <- which(distances_col <= sort.int(distances_col,
+          partial = max(k))[max(k)], arr.ind = TRUE)
       # We sort them so the closer neighbor is at the first position
       sorted_dists <- head(sorted_dists[sort.int(distances_col[sorted_dists],
-                        index.return = TRUE, decreasing = FALSE)$ix], max(k))
+          index.return = TRUE, decreasing = FALSE)$ix], max(k))
 
       for (k_index in 1:ks) {
         k_value <- k[k_index]
@@ -196,10 +195,10 @@ knn_param_search <- function(y, k, d, initial = NULL, distance = 'euclidean',
         # Calculate the weights for the future computation of the weighted mean
         weights <- switch(weight,
                           proportional = 1 / (distances_col[k_nn] +
-                                            .Machine$double.xmin * 1e150),
+                                                .Machine$double.xmin * 1e150),
                           average = rep.int(1, k_value),
                           linear = k_value:1
-                        )
+                          )
 
         # Calculate the predicted value
         predictions[k_index, n - initial + 2 - j] <-
@@ -212,12 +211,12 @@ knn_param_search <- function(y, k, d, initial = NULL, distance = 'euclidean',
     # the current d and all k's
     for (k_index in 1:ks) {
       errors[k_index] <- forecast::accuracy(ts(predictions[k_index, ]),
-                                                real_values)[error_type]
+                                            real_values)[error_type]
     }
 
     errors
   }
-  
+
   foreach::registerDoSEQ()
   parallel::stopCluster(clust)
 
@@ -226,8 +225,8 @@ knn_param_search <- function(y, k, d, initial = NULL, distance = 'euclidean',
   opt_k <- k[((index_min_error - 1) %% ks) + 1]
   opt_d <- d[ceiling(index_min_error / ks)]
   dimnames(errors_matrix) <- list(k, d)
-  
-  model$method <- 'k-Nearest Neighbors'
+
+  model$method <- "k-Nearest Neighbors"
   model$opt_k <- opt_k
   model$opt_d <- opt_d
   model$tested_ds <- d
@@ -239,6 +238,6 @@ knn_param_search <- function(y, k, d, initial = NULL, distance = 'euclidean',
   model$weight <- weight
   model$threads <- threads
   model$call <- deparse(sys.call())
-  
+
   model
 }

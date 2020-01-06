@@ -17,7 +17,7 @@
 #' predicted value with a weighted mean. Three supported: proportional,
 #' average, linear.
 #' \describe{
-#'   \item{proportional}{the weight assigned to each neighbor is inversely 
+#'   \item{proportional}{the weight assigned to each neighbor is inversely
 #'   proportional to its distance}
 #'   \item{average}{all neighbors are assigned with the same weight}
 #'   \item{linear}{nearest neighbor is assigned with weight k, second closest
@@ -33,121 +33,121 @@
 #' knn_forecast(AirPassengers, 5, 2)
 #' knn_forecast(LakeHuron, 3, 6)
 #' @export
-knn_forecast <- function(y, k, d, distance = 'euclidean', weight =
-                             'proportional', v = 1, threads = 1, h = 1) {
+knn_forecast <- function(y, k, d, distance = "euclidean", weight =
+                           "proportional", v = 1, threads = 1, h = 1) {
   require(parallelDist)
   require(parallel)
-  
+
   # Default number of threads to be used
   if (is.null(threads)) {
     cores <- parallel::detectCores(logical = FALSE)
     threads <- ifelse(cores == 1, cores, cores - 1)
   }
-  
+
   forec <- list()
-  class(forec) <- 'forecast'
-  forec$method <- 'k-Nearest Neighbors for unknown observations'
-  
-  if (any(class(y) == 'kNN')) {
+  class(forec) <- "forecast"
+  forec$method <- "k-Nearest Neighbors for unknown observations"
+
+  if (any(class(y) == "kNN")) {
     forec$model <- y
-    
+
     k <- y$opt_k
     d <- y$opt_d
     distance <- y$distance
     weight <- y$weight
     threads <- threads
-    
+
     y <- y$x
   }
   else {
     model <- list()
-    class(model) <- 'kNN'
-    model$method <- 'k-Nearest Neighbors'
+    class(model) <- "kNN"
+    model$method <- "k-Nearest Neighbors"
     model$k <- k
     model$d <- d
     model$distance <- distance
     model$weight <- weight
     forec$model <- model
   }
-  
+
   if (any(is.na(y))) {
-    stop('There are NAs values in the time series')
+    stop("There are NAs values in the time series")
   }
-  
+
   if (any(is.nan(y))) {
-    stop('There are NaNs values in the time series')
+    stop("There are NaNs values in the time series")
   }
-  
-  if (all(weight != c('proportional', 'average', 'linear'))) {
-    stop(paste0('Weight metric "', weight, '" unrecognized.'))
+
+  if (all(weight != c("proportional", "average", "linear"))) {
+    stop(paste0("Weight metric '", weight, "' unrecognized."))
   }
-  
+
   # Initialization of variables to be used
   n <- NROW(y)
   forec$x <- y
 
-  if (any(class(y) == 'ts')) {
-    if (!requireNamespace('tseries', quietly = TRUE)) {
-      stop('Package "tseries" needed for this function to work with ts objects.
-           Please install it.', call. = FALSE)
+  if (any(class(y) == "ts")) {
+    if (!requireNamespace("tseries", quietly = TRUE)) {
+      stop("Package 'tseries' needed for this function to work with ts objects.
+           Please install it.", call. = FALSE)
     }
     require(tseries)
-    
+
     if (NCOL(y) < v) {
-      stop(paste0('Index of variable off limits: v = ', v,
-                  ' but given time series has ', NCOL(y), ' variables.'))
+      stop(paste0("Index of variable off limits: v = ", v,
+                  " but given time series has ", NCOL(y), " variables."))
     }
-    
+
     sta <- time(y)[n]
     freq <- frequency(y)
-    resType <- 'ts'
-    
+    resType <- "ts"
+
     y <- matrix(sapply(y, as.double), ncol = NCOL(y))
   }
-  else if ( any(class(y) == 'tbl_ts')) {
-    if (!requireNamespace('tsibble', quietly = TRUE)) {
-      stop(paste0('Package "tsibble" needed for this function to work with ',
-                  'tsibble objects. Please install it.'), call. = FALSE)
+  else if (any(class(y) == "tbl_ts")) {
+    if (!requireNamespace("tsibble", quietly = TRUE)) {
+      stop(paste0("Package 'tsibble' needed for this function to work with ",
+                  "tsibble objects. Please install it."), call. = FALSE)
     }
     require(tsibble)
-    
+
     if (length(tsibble::measured_vars(y)) < v) {
-      stop(paste0('Index of variable off limits: v = ', v,
-                  ' but given time series has ',
-                  length(tsibble::measured_vars(y)), ' variables.'))
+      stop(paste0("Index of variable off limits: v = ", v,
+                  " but given time series has ",
+                  length(tsibble::measured_vars(y)), " variables."))
     }
-    
+
     resul <- tail(tsibble::append_row(y), 1)
 
-    resType <- 'tsibble'
-    
+    resType <- "tsibble"
+
     y <- matrix(sapply(y[tsibble::measured_vars(y)], as.double), ncol =
-                    length(tsibble::measures(y)))
-  } 
+                  length(tsibble::measures(y)))
+  }
   else {
-    resType <- 'undef'
-    
+    resType <- "undef"
+
     if (NCOL(y) < v) {
-      stop(paste0('Index of variable off limits: v = ', v,
-                  ' but given time series has ', NCOL(y), ' variables.'))
+      stop(paste0("Index of variable off limits: v = ", v,
+                  " but given time series has ", NCOL(y), " variables."))
     }
-    
+
     y <- matrix(sapply(y, as.double), ncol = NCOL(y))
   }
-  
+
   # Get 'elements' matrices (one per variable)
   distances <- plyr::alply(y, 2, function(y_col)
-      knn_elements(matrix(y_col, ncol = 1), d))
+    knn_elements(matrix(y_col, ncol = 1), d))
 
   # For each of the elements matrices, obtain the distances between
   # the most recent 'element' and the rest of the 'elements'.
   # This results in a list of distances vectors
   distances <- plyr::llply(distances, function(elements_matrix)
-      parallelDist::parDist(elements_matrix, distance,
-                            threads = threads)[1:(n - d)])
-  
+    parallelDist::parDist(elements_matrix, distance,
+                          threads = threads)[1:(n - d)])
+
   # Combine all distances vectors by aggregating them
-  distances <- Reduce('+', distances)
+  distances <- Reduce("+", distances)
 
   # Get the indexes of the k nearest 'elements', these are called neighbors
   k_nn <- which(distances <= sort.int(distances, partial = k)[k],
@@ -155,39 +155,39 @@ knn_forecast <- function(y, k, d, distance = 'euclidean', weight =
   # We sort them so the closer neighbor is at the first position
   k_nn <- head(k_nn[sort.int(distances[k_nn], index.return = TRUE,
                              decreasing = FALSE)$ix], k)
-  
+
   # Calculate the weights for the future computation of the weighted mean
   weights <- switch(weight,
                     proportional = 1 / (distances[k_nn] +
-                                            .Machine$double.xmin * 1e150),
+                                          .Machine$double.xmin * 1e150),
                     average = rep.int(1, k),
                     linear = k:1
-                )
+  )
 
   # Calculate the predicted value
   forec$neighbors <- n - k_nn
   prediction <- weighted.mean(y[n - k_nn + 1, v], weights)
-  
-  if (resType == 'ts') {
-    forec$mean <- tail(ts(c(1, prediction), start = sta, frequency = freq ), 1)
+
+  if (resType == "ts") {
+    forec$mean <- tail(ts(c(1, prediction), start = sta, frequency = freq), 1)
     forec$fitted <- ts(start = sta, frequency = freq)
   }
-  else if (resType == 'tsibble') {
+  else if (resType == "tsibble") {
     forec$fitted <- resul
     resul[tsibble::measured_vars(resul)[v]] <- prediction
     forec$mean <- resul
-  } 
+  }
   else {
     forec$mean <- prediction
     forec$fitted <- NA
   }
-  
+
   forec$lower <- NA
   forec$upper <- NA
-  
+
   forec$residuals <- tail(y[, v], 1) - prediction
-  
+
   forec$distances <- rev(distances)
-  
+
   forec
 }
