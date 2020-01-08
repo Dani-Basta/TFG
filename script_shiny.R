@@ -184,11 +184,11 @@ server <- function(input, output, session) {
             ind <- 1
             
             redDecr   <- (250 - 150) / (actK - 1)
-            transDecr <- (0.9 - 0.2) / (actK - 1)
+            transDecr <- (0.9 - 0.3) / (actK - 1)
             
             if (actK == res$opt_k && actD == res$opt_d && x_click+1 >= train_init && x_click < n) {
-                print(x_click-train_init)
-                print(dates[x_click])
+                # print(x_click-train_init)
+                # print(dates[x_click])
                 for (i in optimal$neighbors[,(x_click+1-train_init)] ) {
                     pKNN <- add_trace(pKNN, x = (-(actD - 1)):0, y = y[(i + 1 - actD):i], name = paste0(ind,"-NN (", dates[(i)], ")" ), legendgroup = paste0(ind,"-NN"),
                                       line = list(color = paste0("rgba(", 250 - (ind-1)*redDecr, ",40,40," , 0.9 - (ind-1)*transDecr ), width = ifelse(ind>actK/2, 3, 4)),
@@ -274,7 +274,7 @@ server <- function(input, output, session) {
             #     ind <- ind + 1
             # }
             
-            # distColors <- c("darkcyan", "lightskyblue", "lightcyan")
+            distColors <- c("darkcyan", "lightskyblue", "lightcyan")
             
             # distances <- (max(distances)*1.1) - distances
             
@@ -286,18 +286,29 @@ server <- function(input, output, session) {
             distances <- knn_forecast(y = head(y, x_click), k = actK, d = actD, distance = distance, 
                                       weight = weight, threads = n_threads)$distances
 
-            distances <- min(distances) / distances
 
-            distColors <- rev(c("darkcyan", "lightskyblue", "lightcyan"))
+            # distances <- min(distances) / distances
+            # distColors <- rev(distColors)
+
+
             # x = tail(head(dates, length(distances) + actD - 1), length(distances))
-            pDists <<- plot_ly(x = window(dates, start = actD, end = x_click-1), y = distances, name  = "Knn distances", 
+            # x = window(dates, start = actD, end = x_click-1)
+            pDists <<- plot_ly(x = tail(head(dates, length(distances) + actD - 1), length(distances)), y = distances, name  = "Knn distances",
                               showlegend = FALSE, hoverinfo = "x+y", type = "bar", color = distances, colors = distColors) %>%
-                    layout(xaxis = list( range = list(dates[ (actD)], dates[(actD + length(distances) - 1)]), 
+                    layout(xaxis = list( range = list(dates[(actD)], dates[(actD + length(distances) - 1)]),
                                         rangeslider = list( range = list(dates[ (actD)], dates[(actD + length(distances) - 1)]) ) ) )
-            
+
+            # pDists
+            # 
             # pKNN
-            pDists
             # subplot(pKNN, pDists, nrows = 1)
+
+            sumDists <- rev(rowSums(abs(t(t(knn_elements(matrix(head(y, x_click-1)), actD)) - y[((-actD+1):0) + x_click]))))/actD
+
+            # sumDists <- cdist(y[x_click+1], y[(actD):x_click], metric = distance)
+            # print(sumDists)
+            pNeighs <- plot_ly(x = tail(head(dates, length(distances) + actD - 1), length(distances)), y = sumDists, type = "bar")
+            subplot(pDists, pNeighs, nrows = 2, shareX = TRUE)
         } 
         else {
             NULL
@@ -857,7 +868,6 @@ server <- function(input, output, session) {
 
         
     })
-    
     
     
 } 
