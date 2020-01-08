@@ -112,7 +112,7 @@ knn_past <- function(y, k, d, initial = NULL, distance = "euclidean", weight =
 
     sta <- time(y)[initial + 1]
     freq <- frequency(y)
-    resType <- "ts"
+    res_type <- "ts"
 
     y <- matrix(sapply(y, as.double), ncol = NCOL(y))
   }
@@ -133,14 +133,14 @@ knn_past <- function(y, k, d, initial = NULL, distance = "euclidean", weight =
 
     resul[tsibble::measured_vars(resul)] <- NA
 
-    resType <- "tsibble"
+    res_type <- "tsibble"
 
     y <- matrix(sapply(y[tsibble::measured_vars(y)], as.double), ncol =
                   length(tsibble::measures(y)))
 
   }
   else {
-    resType <- "undef"
+    res_type <- "undef"
 
     if (NCOL(y) < v) {
       stop(paste0("Index of variable off limits: v = ", v,
@@ -195,11 +195,11 @@ knn_past <- function(y, k, d, initial = NULL, distance = "euclidean", weight =
         weighted.mean(y[n + 2 - j - k_nn, v], weights)
     prediction_index <- prediction_index - 1
   }
-  if (resType == "ts") {
+  if (res_type == "ts") {
     forec$fitted <- ts(predictions, start = sta, frequency = freq)
     forec$mean <- ts(start = sta, frequency = freq)
   }
-  else if (resType == "tsibble") {
+  else if (res_type == "tsibble") {
     forec$mean <- resul
     resul[tsibble::measured_vars(resul)[v]] <- predictions
     forec$fitted <- resul

@@ -100,7 +100,7 @@ knn_forecast <- function(y, k, d, distance = "euclidean", weight =
 
     sta <- time(y)[n]
     freq <- frequency(y)
-    resType <- "ts"
+    res_type <- "ts"
 
     y <- matrix(sapply(y, as.double), ncol = NCOL(y))
   }
@@ -119,13 +119,13 @@ knn_forecast <- function(y, k, d, distance = "euclidean", weight =
 
     resul <- tail(tsibble::append_row(y), 1)
 
-    resType <- "tsibble"
+    res_type <- "tsibble"
 
     y <- matrix(sapply(y[tsibble::measured_vars(y)], as.double), ncol =
                   length(tsibble::measures(y)))
   }
   else {
-    resType <- "undef"
+    res_type <- "undef"
 
     if (NCOL(y) < v) {
       stop(paste0("Index of variable off limits: v = ", v,
@@ -168,11 +168,11 @@ knn_forecast <- function(y, k, d, distance = "euclidean", weight =
   forec$neighbors <- n - k_nn
   prediction <- weighted.mean(y[n - k_nn + 1, v], weights)
 
-  if (resType == "ts") {
+  if (res_type == "ts") {
     forec$mean <- tail(ts(c(1, prediction), start = sta, frequency = freq), 1)
     forec$fitted <- ts(start = sta, frequency = freq)
   }
-  else if (resType == "tsibble") {
+  else if (res_type == "tsibble") {
     forec$fitted <- resul
     resul[tsibble::measured_vars(resul)[v]] <- prediction
     forec$mean <- resul
