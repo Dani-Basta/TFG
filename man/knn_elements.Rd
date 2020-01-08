@@ -2,7 +2,10 @@
 % Please edit documentation in R/knn_elements.R
 \name{knn_elements}
 \alias{knn_elements}
-\title{'Elements' matrix computation}
+\title{Creates a matrix to be used for calculating distances. The most
+recent 'element' is put in the first row of the matrix, the
+second most recent 'element' in the second row and so on. Therefore,
+the oldest 'element' is put in the last row.}
 \usage{
 knn_elements(y, d)
 }
@@ -19,4 +22,8 @@ Creates a matrix to be used for calculating distances. The most
 recent 'element' is put in the first row of the matrix, the
 second most recent 'element' in the second row and so on. Therefore,
 the oldest 'element' is put in the last row.
+}
+\examples{
+knn_elements(matrix(AirPassengers), 2)
+knn_elements(matrix(LakeHuron), 6)
 }
