@@ -1,3 +1,8 @@
+# Abandoned branch
+For further releases visit 
+https://github.com/Grasia/knnp
+
+
 knnp : Time Series Prediction using K-Nearest Neighbors Algorithm (Parallel)
 # TFG
 ===========
